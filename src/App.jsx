@@ -1,0 +1,81 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './stores/authStore';
+import AppShell from './components/layout/AppShell';
+import LoginPage from './features/auth/LoginPage';
+import AuthGuard from './features/auth/AuthGuard';
+import DashboardPage from './features/dashboard/DashboardPage';
+import AccessCardPage from './features/access-card/AccessCardPage';
+import MemberDashboard from './features/membership/MemberDashboard';
+import AdminMemberList from './features/membership/AdminMemberList';
+import BookingsPage from './features/bookings/BookingsPage';
+import LogsPage from './features/logs/LogsPage';
+import VisitorManagement from './features/visitors/VisitorManagement';
+import ProfilePage from './features/profile/ProfilePage';
+import AccessRulesPage from './features/admin/AccessRulesPage';
+import DevicesPage from './features/admin/DevicesPage';
+import OfflinePage from './pages/OfflinePage';
+import InstallPrompt from './components/InstallPrompt';
+import { ROLES } from './lib/mockData';
+
+function AppRoutes() {
+  const { isAuthenticated, user } = useAuthStore();
+  const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+
+  return (
+    <Routes>
+      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />} />
+      <Route path="/offline" element={<OfflinePage />} />
+
+      <Route element={
+        <AuthGuard>
+          <AppShell />
+        </AuthGuard>
+      }>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/access-card" element={<AccessCardPage />} />
+        <Route path="/membership" element={<MemberDashboard />} />
+        <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/activity" element={<LogsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+
+        {/* Admin routes */}
+        <Route path="/members" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <AdminMemberList />
+          </AuthGuard>
+        } />
+        <Route path="/logs" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER, ROLES.SECURITY]}>
+            <LogsPage />
+          </AuthGuard>
+        } />
+        <Route path="/access-rules" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <AccessRulesPage />
+          </AuthGuard>
+        } />
+        <Route path="/devices" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <DevicesPage />
+          </AuthGuard>
+        } />
+        <Route path="/visitors" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <VisitorManagement />
+          </AuthGuard>
+        } />
+      </Route>
+
+      <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+      <InstallPrompt />
+    </BrowserRouter>
+  );
+}
