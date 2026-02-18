@@ -17,7 +17,7 @@ export default function LoginPage() {
     const [role, setRole] = useState(ROLES.MEMBER);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { login } = useAuthStore();
+    const { login, loginError } = useAuthStore();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -25,13 +25,14 @@ export default function LoginPage() {
         setLoading(true);
         // Simulate API call
         await new Promise(r => setTimeout(r, 800));
-        login(email, password, role);
-        setLoading(false);
-        navigate('/dashboard');
+        const success = await login(email, password);
+        if (success) {
+            navigate('/dashboard');
+        }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-surface-950 via-primary-900 to-surface-950 relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-surface-950 relative overflow-hidden">
             {/* Animated background orbs */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-500/20 rounded-full blur-3xl animate-pulse" />
@@ -48,7 +49,7 @@ export default function LoginPage() {
             <div className="relative w-full max-w-md mx-4">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
+                    <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
                         <Zap className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold text-white mb-1">Innovation Hub</h1>
@@ -57,6 +58,11 @@ export default function LoginPage() {
 
                 {/* Card */}
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl">
+                    {loginError && (
+                        <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                            {loginError}
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Email */}
                         <div>
@@ -94,30 +100,13 @@ export default function LoginPage() {
                         </div>
 
                         {/* Role Selector */}
-                        <div>
-                            <label className="block text-sm font-medium text-surface-300 mb-2">Demo Role</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {roleOptions.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => setRole(opt.value)}
-                                        className={`p-3 rounded-xl border text-left transition-all text-sm
-                      ${role === opt.value
-                                                ? 'border-primary-500 bg-primary-500/10 text-white'
-                                                : 'border-white/10 bg-white/5 text-surface-400 hover:border-white/20 hover:bg-white/10'}`}>
-                                        <p className="font-medium">{opt.label}</p>
-                                        <p className="text-xs opacity-70 mt-0.5">{opt.desc}</p>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+
 
                         {/* Submit */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-500 hover:to-accent-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-500/25 disabled:opacity-70">
+                            className="w-full py-3 bg-primary-600 hover:bg-primary-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary-500/25 disabled:opacity-70">
                             {loading ? (
                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                             ) : (

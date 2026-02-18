@@ -1,4 +1,5 @@
 import { WifiOff, RefreshCw, Home } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function OfflinePage() {
     return (
@@ -16,10 +17,10 @@ export default function OfflinePage() {
                         className="flex items-center justify-center gap-2 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition-colors">
                         <RefreshCw className="w-4 h-4" /> Try Again
                     </button>
-                    <a href="/dashboard"
+                    <Link to="/dashboard"
                         className="flex items-center justify-center gap-2 py-3 bg-surface-200 dark:bg-surface-800 font-semibold rounded-xl hover:bg-surface-300 dark:hover:bg-surface-700 transition-colors">
                         <Home className="w-4 h-4" /> Go to Dashboard
-                    </a>
+                    </Link>
                 </div>
                 <p className="text-xs text-surface-400 mt-6">Your cached data is still available</p>
             </div>

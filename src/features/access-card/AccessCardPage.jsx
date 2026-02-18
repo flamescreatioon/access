@@ -3,20 +3,23 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuthStore } from '../../stores/authStore';
 import { useMembershipStore } from '../../stores/membershipStore';
 import { generateQRToken } from '../../lib/mockData';
-import { Shield, Clock, RefreshCw, Wifi, WifiOff, Smartphone } from 'lucide-react';
+import { Shield, Clock, RefreshCw, Wifi, WifiOff, Smartphone, ChevronLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function AccessCardPage() {
     const { user } = useAuthStore();
-    const { currentMembership } = useMembershipStore();
+    const { currentMembership, generateQrToken } = useMembershipStore();
     const [qrToken, setQrToken] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-    const generateNewToken = useCallback(() => {
-        const token = generateQRToken(user?.id || 'u1');
-        setQrToken(token);
-        setTimeLeft(30);
-    }, [user?.id]);
+    const generateNewToken = useCallback(async () => {
+        const token = await generateQrToken();
+        if (token) {
+            setQrToken(token);
+            setTimeLeft(30);
+        }
+    }, [generateQrToken]);
 
     useEffect(() => {
         generateNewToken();
@@ -47,7 +50,10 @@ export default function AccessCardPage() {
     return (
         <div className="max-w-lg mx-auto space-y-6 page-enter page-enter-active">
             {/* Header */}
-            <div className="text-center">
+            <div className="text-center relative">
+                <Link to="/dashboard" className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">
+                    <ChevronLeft className="w-5 h-5 text-surface-500" />
+                </Link>
                 <h1 className="text-2xl md:text-3xl font-bold">Access Card</h1>
                 <p className="text-surface-500 mt-1">Present this QR code at any scanner</p>
             </div>
@@ -55,7 +61,7 @@ export default function AccessCardPage() {
             {/* Main Card */}
             <div className="bg-white dark:bg-surface-800/50 rounded-3xl border border-surface-200 dark:border-surface-700/50 shadow-xl overflow-hidden">
                 {/* Card Header */}
-                <div className="bg-gradient-to-r from-primary-600 to-accent-600 px-6 py-4">
+                <div className="bg-primary-600 px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-white/80 text-sm">Innovation Hub</p>

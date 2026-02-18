@@ -11,7 +11,7 @@ export default function ProfilePage() {
 
             {/* Profile Card */}
             <div className="bg-white dark:bg-surface-800/50 rounded-2xl border border-surface-200 dark:border-surface-700/50 overflow-hidden">
-                <div className="h-24 bg-gradient-to-r from-primary-500 to-accent-500" />
+                <div className="h-24 bg-primary-600" />
                 <div className="px-6 pb-6">
                     <div className="flex items-end gap-4 -mt-10">
                         <img src={user?.avatar} alt="" className="w-20 h-20 rounded-2xl border-4 border-white dark:border-surface-800 bg-surface-200" />

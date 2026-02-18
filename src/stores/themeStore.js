@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export const useThemeStore = create((set) => ({
-    dark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    dark: true, // Force dark mode by default
     toggle: () => set((state) => {
         const next = !state.dark;
         document.documentElement.classList.toggle('dark', next);

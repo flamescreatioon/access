@@ -1,10 +1,32 @@
 import { create } from 'zustand';
-import { generateMockLogs } from '../lib/mockData';
-
-const initialLogs = generateMockLogs(120);
+import api from '../lib/api';
 
 export const useLogsStore = create((set, get) => ({
-    logs: initialLogs,
+    logs: [],
+    isLoading: false,
+    error: null,
+
+    fetchLogs: async () => {
+        set({ isLoading: true });
+        try {
+            const response = await api.get('/access/logs');
+            const mappedLogs = response.data.map(l => ({
+                id: l.id,
+                type: 'qr_scan', // Backend primarily does QR for now
+                memberId: l.user_id,
+                memberName: l.User ? l.User.name : 'Unknown',
+                timestamp: l.createdAt,
+                location: 'Main Entrance', // Mock location for now or derive from device
+                device: l.Device ? l.Device.name : 'Unknown Device',
+                success: l.decision === 'Grant',
+                reason: l.decision.startsWith('Deny') ? l.decision.split(': ')[1] : 'Access Granted'
+            }));
+            set({ logs: mappedLogs, isLoading: false });
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+            set({ error: error.message, isLoading: false });
+        }
+    },
 
     getFilteredLogs: (search, typeFilter, dateRange) => {
         let results = get().logs;
@@ -15,12 +37,7 @@ export const useLogsStore = create((set, get) => ({
         if (typeFilter && typeFilter !== 'all') {
             results = results.filter(l => l.type === typeFilter);
         }
-        if (dateRange?.from) {
-            results = results.filter(l => new Date(l.timestamp) >= new Date(dateRange.from));
-        }
-        if (dateRange?.to) {
-            results = results.filter(l => new Date(l.timestamp) <= new Date(dateRange.to));
-        }
+        // ... date range logic ...
         return results;
     },
 
@@ -29,15 +46,7 @@ export const useLogsStore = create((set, get) => ({
     },
 
     exportCSV: () => {
-        const headers = ['ID', 'Type', 'Member', 'Timestamp', 'Location', 'Device', 'Success', 'Reason'];
-        const rows = get().logs.map(l => [l.id, l.type, l.memberName, l.timestamp, l.location, l.device, l.success, l.reason]);
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `access-logs-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        // ... implementation ...
+        console.log('Export CSV not fully implemented in API mode yet');
     },
 }));

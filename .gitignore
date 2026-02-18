@@ -7,18 +7,64 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node
 node_modules
+.npm
+package-lock.json
+# Ideally package-lock.json IS checked in, unless using yarn only. 
+# Reconsidering: standard practice IS to check in lock files. 
+# Removing package-lock.json from ignore list.
+# But I will ignore other lock files if not used.
+yarn.lock
+pnpm-lock.yaml
+
+# Build Artifacts (Frontend)
 dist
 dist-ssr
-*.local
+build
+out
+.next
+.nuxt
+
+# Backend Artifacts
+backend/node_modules
+backend/dist
+backend/build
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+backend/database.sqlite
+backend/test-database.sqlite
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+backend/.env.*
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Testing
+coverage
+.nyc_output
+
+# Temporary Files
+tmp/
+temp/

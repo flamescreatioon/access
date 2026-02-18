@@ -10,9 +10,9 @@ export const ROLES = {
 
 export const MEMBERSHIP_TIERS = [
     { id: 'basic', name: 'Basic', color: '#64748b', price: 29, maxBookingHours: 4, maxRooms: 1 },
-    { id: 'pro', name: 'Professional', color: '#6366f1', price: 79, maxBookingHours: 12, maxRooms: 3 },
-    { id: 'enterprise', name: 'Enterprise', color: '#8b5cf6', price: 199, maxBookingHours: 40, maxRooms: 10 },
-    { id: 'vip', name: 'VIP', color: '#f59e0b', price: 499, maxBookingHours: -1, maxRooms: -1 },
+    { id: 'pro', name: 'Professional', color: '#22c55e', price: 79, maxBookingHours: 12, maxRooms: 3 },
+    { id: 'enterprise', name: 'Enterprise', color: '#f97316', price: 199, maxBookingHours: 40, maxRooms: 10 },
+    { id: 'vip', name: 'VIP', color: '#eab308', price: 499, maxBookingHours: -1, maxRooms: -1 },
 ];
 
 export const ROOMS = [
@@ -56,7 +56,7 @@ export function generateMockMembers(count = 24) {
             firstName: first,
             lastName: last,
             email: `${first.toLowerCase()}.${last.toLowerCase()}@example.com`,
-            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${first}+${last}&backgroundColor=6366f1,8b5cf6,a78bfa`,
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${first}+${last}&backgroundColor=22c55e,f97316,eab308`,
             tier,
             status,
             joinDate: new Date(2024, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),

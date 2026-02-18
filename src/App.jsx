@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import { useThemeStore } from './stores/themeStore';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './features/auth/LoginPage';
 import AuthGuard from './features/auth/AuthGuard';
@@ -72,6 +74,12 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const init = useThemeStore((state) => state.init);
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
   return (
     <BrowserRouter>
       <AppRoutes />

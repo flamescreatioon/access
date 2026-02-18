@@ -15,7 +15,7 @@ export default function MemberDashboard() {
             </div>
 
             {/* Current Plan Card */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 via-primary-700 to-accent-700 p-6 md:p-8 text-white">
+            <div className="relative overflow-hidden rounded-3xl bg-primary-700 p-6 md:p-8 text-white">
                 <div className="absolute -right-12 -top-12 w-48 h-48 bg-white/5 rounded-full blur-xl" />
                 <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-accent-500/20 rounded-full blur-xl" />
 

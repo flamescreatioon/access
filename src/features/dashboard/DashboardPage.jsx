@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useMembershipStore } from '../../stores/membershipStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -8,6 +9,7 @@ import {
     Shield, QrCode, AlertTriangle, ArrowUpRight, Clock
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 function StatCard({ icon: Icon, label, value, trend, color, bg }) {
     return (
@@ -45,14 +47,26 @@ function MiniChart({ data, color }) {
 
 export default function DashboardPage() {
     const { user } = useAuthStore();
-    const { currentMembership, members } = useMembershipStore();
-    const { bookings } = useBookingStore();
-    const { logs } = useLogsStore();
+    const { currentMembership, members, fetchCurrentMembership, isLoading: membershipLoading } = useMembershipStore();
+    const { bookings, fetchBookings, isLoading: bookingsLoading } = useBookingStore();
+    const { logs, fetchLogs, isLoading: logsLoading } = useLogsStore();
     const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+
+    useEffect(() => {
+        if (user) {
+            fetchCurrentMembership(user.id);
+            fetchBookings();
+            fetchLogs();
+        }
+    }, [user, fetchCurrentMembership, fetchBookings, fetchLogs]);
 
     const recentLogs = logs.slice(0, 5);
     const activeMembers = members.filter(m => m.status === 'active').length;
     const upcomingBookings = bookings.filter(b => new Date(b.startTime) > new Date() && b.status !== 'cancelled');
+
+    if (membershipLoading || bookingsLoading || logsLoading) {
+        return <div className="flex items-center justify-center min-h-[50vh]"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div></div>;
+    }
 
     return (
         <div className="space-y-6 page-enter page-enter-active">
@@ -76,12 +90,18 @@ export default function DashboardPage() {
                         <StatCard icon={CalendarDays} label="Bookings Today" value={ANALYTICS_DATA.bookingFrequency[ANALYTICS_DATA.bookingFrequency.length - 1]} trend="+15%" color="text-success-500" bg="bg-success-100 dark:bg-success-900/30" />
                     </>
                 ) : (
-                    <>
-                        <StatCard icon={Shield} label="Access Status" value={currentMembership.status === 'active' ? 'Active' : 'Inactive'} color="text-success-500" bg="bg-success-100 dark:bg-success-900/30" />
-                        <StatCard icon={CreditCard} label="Membership" value={currentMembership.tier.name} color="text-primary-500" bg="bg-primary-100 dark:bg-primary-900/30" />
-                        <StatCard icon={CalendarDays} label="Upcoming" value={`${upcomingBookings.length} bookings`} color="text-accent-500" bg="bg-accent-100 dark:bg-accent-900/30" />
-                        <StatCard icon={Activity} label="Total Access" value={currentMembership.accessCount} trend="+5%" color="text-warning-500" bg="bg-warning-100 dark:bg-warning-900/30" />
-                    </>
+                    currentMembership ? (
+                        <>
+                            <StatCard icon={Shield} label="Access Status" value={currentMembership.status === 'active' ? 'Active' : 'Inactive'} color="text-success-500" bg="bg-success-100 dark:bg-success-900/30" />
+                            <StatCard icon={CreditCard} label="Membership" value={currentMembership.tier.name} color="text-primary-500" bg="bg-primary-100 dark:bg-primary-900/30" />
+                            <StatCard icon={CalendarDays} label="Upcoming" value={`${upcomingBookings.length} bookings`} color="text-accent-500" bg="bg-accent-100 dark:bg-accent-900/30" />
+                            <StatCard icon={Activity} label="Total Access" value={currentMembership.accessCount} trend="+5%" color="text-warning-500" bg="bg-warning-100 dark:bg-warning-900/30" />
+                        </>
+                    ) : (
+                        <div className="col-span-full p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-xl text-center">
+                            No active membership found. Please contact support.
+                        </div>
+                    )
                 )}
             </div>
 
@@ -96,27 +116,29 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="lg:col-span-2 bg-gradient-to-br from-primary-600 to-accent-600 rounded-2xl p-6 text-white relative overflow-hidden">
-                        <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-                        <div className="absolute right-4 top-4 w-16 h-16 bg-white/10 rounded-full blur-lg" />
-                        <p className="text-sm opacity-80">Quick Access</p>
-                        <h2 className="text-xl font-bold mt-1">{currentMembership.tier.name} Member</h2>
-                        <p className="text-sm opacity-70 mt-2 flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            Expires {formatDistanceToNow(new Date(currentMembership.expiryDate), { addSuffix: true })}
-                        </p>
-                        <div className="mt-4 flex gap-3">
-                            <a href="/access-card" className="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-xl text-sm font-medium transition-colors">Open Access Card</a>
-                            <a href="/bookings" className="bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-2 rounded-xl text-sm font-medium transition-colors">Book a Room</a>
+                    currentMembership ? (
+                        <div className="lg:col-span-2 bg-primary-600 rounded-2xl p-6 text-white relative overflow-hidden">
+                            <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
+                            <div className="absolute right-4 top-4 w-16 h-16 bg-white/10 rounded-full blur-lg" />
+                            <p className="text-sm opacity-80">Quick Access</p>
+                            <h2 className="text-xl font-bold mt-1">{currentMembership.tier.name} Member</h2>
+                            <p className="text-sm opacity-70 mt-2 flex items-center gap-1">
+                                <Clock className="w-4 h-4" />
+                                Expires {formatDistanceToNow(new Date(currentMembership.expiryDate), { addSuffix: true })}
+                            </p>
+                            <div className="mt-4 flex gap-3">
+                                <Link to="/access-card" className="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-xl text-sm font-medium transition-colors">Open Access Card</Link>
+                                <Link to="/bookings" className="bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-2 rounded-xl text-sm font-medium transition-colors">Book a Room</Link>
+                            </div>
                         </div>
-                    </div>
+                    ) : null
                 )}
 
                 {/* Recent Activity */}
                 <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
                     <h2 className="font-semibold mb-3 flex items-center gap-2"><Activity className="w-5 h-5 text-accent-500" /> Recent Activity</h2>
                     <div className="space-y-3">
-                        {recentLogs.slice(0, 5).map(log => (
+                        {recentLogs.length > 0 ? recentLogs.map(log => (
                             <div key={log.id} className="flex items-start gap-3 text-sm">
                                 <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${log.success ? 'bg-success-400' : 'bg-danger-400'}`} />
                                 <div className="min-w-0 flex-1">
@@ -124,7 +146,7 @@ export default function DashboardPage() {
                                     <p className="text-xs text-surface-500">{log.type.replace('_', ' ')} • {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}</p>
                                 </div>
                             </div>
-                        ))}
+                        )) : <p className="text-sm text-surface-500">No recent activity</p>}
                     </div>
                 </div>
             </div>

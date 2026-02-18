@@ -8,8 +8,15 @@ const timeSlots = Array.from({ length: 12 }, (_, i) => {
     return { hour, label: `${hour.toString().padStart(2, '0')}:00` };
 });
 
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+
 export default function BookingsPage() {
-    const { bookings, rooms, equipment, addBooking, cancelBooking, getBookingsForDate } = useBookingStore();
+    const { bookings, rooms, equipment, addBooking, cancelBooking, getBookingsForDate, fetchBookings } = useBookingStore();
+
+    useEffect(() => {
+        fetchBookings();
+    }, [fetchBookings]);
     const [tab, setTab] = useState('rooms');
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showModal, setShowModal] = useState(false);
@@ -61,9 +68,14 @@ export default function BookingsPage() {
     return (
         <div className="space-y-6 page-enter page-enter-active">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold">Bookings</h1>
-                    <p className="text-surface-500 mt-1">Reserve rooms and equipment</p>
+                <div className="flex items-center gap-3">
+                    <Link to="/dashboard" className="p-2 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">
+                        <ChevronLeft className="w-5 h-5 text-surface-500" />
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold">Bookings</h1>
+                        <p className="text-surface-500 mt-1">Reserve rooms and equipment</p>
+                    </div>
                 </div>
             </div>
 
