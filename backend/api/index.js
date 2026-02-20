@@ -1,8 +1,6 @@
 // Vercel Serverless Function Entry Point
+// Load .env for local testing; on Vercel, env vars are set in the dashboard
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
-
-// Force production environment on Vercel
-process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
 const app = require('../app');
 
