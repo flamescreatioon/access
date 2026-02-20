@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { ROLES } from '../../lib/mockData';
@@ -11,8 +11,12 @@ import {
 
 export default function LogsPage() {
     const { user } = useAuthStore();
-    const { logs, getFilteredLogs, getMyLogs, exportCSV } = useLogsStore();
+    const { logs, getFilteredLogs, getMyLogs, exportCSV, fetchLogs } = useLogsStore();
     const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER || user?.role === ROLES.SECURITY;
+
+    useEffect(() => {
+        fetchLogs();
+    }, [fetchLogs]);
 
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
@@ -69,6 +73,11 @@ export default function LogsPage() {
         }
     };
 
+    const totalLogs = filteredLogs.length;
+    const grantedLogs = filteredLogs.filter(l => l.success).length;
+    const deniedLogs = filteredLogs.filter(l => !l.success).length;
+    const grantRate = totalLogs > 0 ? Math.round((grantedLogs / totalLogs) * 100) : 0;
+
     return (
         <div className="space-y-6 page-enter page-enter-active">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,19 +86,46 @@ export default function LogsPage() {
                         {isAdmin ? 'Access Logs' : 'My Activity'}
                     </h1>
                     <p className="text-surface-500 mt-1">
-                        {isAdmin ? 'Monitor center usage vs security events' : 'History of your visits and usage'}
+                        {isAdmin ? 'Monitor center usage & security events' : 'History of your visits and usage'}
                     </p>
                 </div>
                 {isAdmin && (
                     <button
                         onClick={exportCSV}
-                        className="btn-outline flex items-center gap-2"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 text-sm font-medium hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
                     >
                         <Download className="w-4 h-4" />
                         Export CSV
                     </button>
                 )}
             </div>
+
+            {/* Stats Summary */}
+            {isAdmin && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-white dark:bg-surface-800/50 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                        <p className="text-xs text-surface-500 font-medium uppercase tracking-wider">Total Events</p>
+                        <p className="text-2xl font-bold mt-1">{totalLogs}</p>
+                    </div>
+                    <div className="bg-white dark:bg-surface-800/50 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                        <p className="text-xs text-success-500 font-medium uppercase tracking-wider">Granted</p>
+                        <p className="text-2xl font-bold mt-1 text-success-500">{grantedLogs}</p>
+                    </div>
+                    <div className="bg-white dark:bg-surface-800/50 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                        <p className="text-xs text-danger-500 font-medium uppercase tracking-wider">Denied</p>
+                        <p className="text-2xl font-bold mt-1 text-danger-500">{deniedLogs}</p>
+                    </div>
+                    <div className="bg-white dark:bg-surface-800/50 rounded-xl p-4 border border-surface-200 dark:border-surface-700/50">
+                        <p className="text-xs text-primary-500 font-medium uppercase tracking-wider">Grant Rate</p>
+                        <div className="flex items-end gap-2 mt-1">
+                            <p className="text-2xl font-bold text-primary-500">{grantRate}%</p>
+                            <div className="flex-1 h-2 bg-surface-100 dark:bg-surface-700 rounded-full mb-1.5 overflow-hidden">
+                                <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${grantRate}%` }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Filters */}
             <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-4 border border-surface-200 dark:border-surface-700/50 shadow-sm">

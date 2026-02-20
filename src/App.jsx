@@ -15,6 +15,7 @@ import VisitorManagement from './features/visitors/VisitorManagement';
 import ProfilePage from './features/profile/ProfilePage';
 import AccessRulesPage from './features/admin/AccessRulesPage';
 import DevicesPage from './features/admin/DevicesPage';
+import UserManagement from './features/admin/UserManagement';
 import OfflinePage from './pages/OfflinePage';
 import InstallPrompt from './components/InstallPrompt';
 import { ROLES } from './lib/mockData';
@@ -64,6 +65,11 @@ function AppRoutes() {
         <Route path="/visitors" element={
           <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
             <VisitorManagement />
+          </AuthGuard>
+        } />
+        <Route path="/users" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <UserManagement />
           </AuthGuard>
         } />
       </Route>

@@ -4,7 +4,7 @@ import { ROLES } from '../../lib/mockData';
 import {
     LayoutDashboard, CreditCard, CalendarDays, Activity,
     Crown, Users, Shield, MonitorSmartphone, BookOpen,
-    UserCheck, Settings, LogOut, Zap
+    UserCheck, UserPlus, Settings, LogOut, Zap
 } from 'lucide-react';
 
 const memberNav = [
@@ -18,6 +18,7 @@ const memberNav = [
 const adminNav = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/members', label: 'Members', icon: Users },
+    { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/access-rules', label: 'Access Rules', icon: Shield },
     { to: '/logs', label: 'Logs', icon: Activity },
     { to: '/devices', label: 'Devices', icon: MonitorSmartphone },

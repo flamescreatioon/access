@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { ROLES } from '../../lib/mockData';
 import {
-    LayoutDashboard, CreditCard, CalendarDays, Activity, Crown, Users, Shield, UserCheck
+    LayoutDashboard, CreditCard, CalendarDays, Activity, Crown,
+    Users, Shield, MonitorSmartphone, UserCheck, UserPlus,
+    MoreHorizontal, X, LogOut, User
 } from 'lucide-react';
 
 const memberNav = [
@@ -13,43 +16,109 @@ const memberNav = [
     { to: '/membership', label: 'Plan', icon: Crown },
 ];
 
-const adminNav = [
+const adminPrimary = [
     { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
     { to: '/members', label: 'Members', icon: Users },
     { to: '/logs', label: 'Logs', icon: Activity },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+];
+
+const adminMore = [
+    { to: '/users', label: 'Users', icon: UserPlus },
+    { to: '/access-rules', label: 'Access Rules', icon: Shield },
+    { to: '/devices', label: 'Devices', icon: MonitorSmartphone },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
+    { to: '/profile', label: 'Profile', icon: User },
 ];
 
 export default function MobileNav() {
-    const { user } = useAuthStore();
+    const { user, logout } = useAuthStore();
     const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
-    const navItems = isAdmin ? adminNav : memberNav;
+    const [moreOpen, setMoreOpen] = useState(false);
+
+    if (!isAdmin) {
+        return (
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl border-t border-surface-200 dark:border-surface-800 safe-area-bottom">
+                <div className="flex items-center justify-around h-16 px-1">
+                    {memberNav.map(item => (
+                        <NavLink key={item.to} to={item.to}
+                            className={({ isActive }) =>
+                                `flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-xs font-medium transition-all
+                                ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 dark:text-surface-500'}`
+                            }>
+                            {({ isActive }) => (
+                                <>
+                                    <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-primary-100 dark:bg-primary-900/40' : ''}`}>
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <span>{item.label}</span>
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+                </div>
+            </nav>
+        );
+    }
 
     return (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl border-t border-surface-200 dark:border-surface-800 safe-area-bottom">
-            <div className="flex items-center justify-around h-16 px-1">
-                {navItems.map(item => (
-                    <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) =>
-                            `flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-xs font-medium transition-all
-              ${isActive
-                                ? 'text-primary-600 dark:text-primary-400'
-                                : 'text-surface-400 dark:text-surface-500'}`
-                        }>
-                        {({ isActive }) => (
-                            <>
-                                <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-primary-100 dark:bg-primary-900/40' : ''}`}>
+        <>
+            {/* More Menu Overlay */}
+            {moreOpen && (
+                <div className="md:hidden fixed inset-0 z-[60]">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMoreOpen(false)} />
+                    <div className="absolute bottom-20 left-4 right-4 bg-white dark:bg-surface-800 rounded-2xl shadow-2xl border border-surface-200 dark:border-surface-700 p-3 animate-in slide-in-from-bottom-4">
+                        <div className="grid grid-cols-3 gap-1">
+                            {adminMore.map(item => (
+                                <NavLink key={item.to} to={item.to} onClick={() => setMoreOpen(false)}
+                                    className={({ isActive }) =>
+                                        `flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl text-xs font-medium transition-all
+                                        ${isActive ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-700'}`
+                                    }>
                                     <item.icon className="w-5 h-5" />
-                                </div>
-                                <span>{item.label}</span>
-                            </>
-                        )}
-                    </NavLink>
-                ))}
-            </div>
-        </nav>
+                                    <span>{item.label}</span>
+                                </NavLink>
+                            ))}
+                            <button onClick={() => { logout(); setMoreOpen(false); }}
+                                className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl text-xs font-medium text-danger-500 hover:bg-danger-50 dark:hover:bg-danger-900/20 transition-all">
+                                <LogOut className="w-5 h-5" />
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bottom Nav */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl border-t border-surface-200 dark:border-surface-800 safe-area-bottom">
+                <div className="flex items-center justify-around h-16 px-1">
+                    {adminPrimary.map(item => (
+                        <NavLink key={item.to} to={item.to} onClick={() => setMoreOpen(false)}
+                            className={({ isActive }) =>
+                                `flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-xs font-medium transition-all
+                                ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 dark:text-surface-500'}`
+                            }>
+                            {({ isActive }) => (
+                                <>
+                                    <div className={`p-1 rounded-lg transition-colors ${isActive ? 'bg-primary-100 dark:bg-primary-900/40' : ''}`}>
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <span>{item.label}</span>
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+                    {/* More Button */}
+                    <button onClick={() => setMoreOpen(!moreOpen)}
+                        className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl text-xs font-medium transition-all
+                        ${moreOpen ? 'text-primary-600 dark:text-primary-400' : 'text-surface-400 dark:text-surface-500'}`}>
+                        <div className={`p-1 rounded-lg transition-colors ${moreOpen ? 'bg-primary-100 dark:bg-primary-900/40' : ''}`}>
+                            {moreOpen ? <X className="w-5 h-5" /> : <MoreHorizontal className="w-5 h-5" />}
+                        </div>
+                        <span>More</span>
+                    </button>
+                </div>
+            </nav>
+        </>
     );
 }

@@ -21,5 +21,6 @@ app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/access', require('./routes/access'));
 app.use('/api/v1/memberships', require('./routes/memberships'));
 app.use('/api/v1/bookings', require('./routes/bookings'));
+app.use('/api/v1/users', require('./routes/users'));
 
 module.exports = app;
