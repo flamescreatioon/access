@@ -14,7 +14,6 @@ const roleOptions = [
 export default function LoginPage() {
     const [email, setEmail] = useState('alex@hub.com');
     const [password, setPassword] = useState('password');
-    const [role, setRole] = useState(ROLES.MEMBER);
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { login, loginError } = useAuthStore();
@@ -23,8 +22,6 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        // Simulate API call
-        await new Promise(r => setTimeout(r, 800));
         const success = await login(email, password);
         if (success) {
             navigate('/dashboard');

@@ -68,8 +68,8 @@ export default function Sidebar({ collapsed, onToggle }) {
                     <img src={user?.avatar} alt="" className="w-8 h-8 rounded-full bg-surface-200" />
                     {!collapsed && (
                         <div className="flex-1 min-w-0">
-                            <p className="font-medium text-surface-900 dark:text-surface-100 truncate">{user?.firstName} {user?.lastName}</p>
-                            <p className="text-xs text-surface-500 capitalize">{user?.role?.replace('_', ' ')}</p>
+                            <p className="font-medium text-surface-900 dark:text-surface-100 truncate">{user?.name}</p>
+                            <p className="text-xs text-surface-500 capitalize">{user?.role}</p>
                         </div>
                     )}
                 </NavLink>

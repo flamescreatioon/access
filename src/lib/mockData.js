@@ -1,11 +1,11 @@
 // Mock data generators and constants for the Innovation Hub Access PWA
 
 export const ROLES = {
-    MEMBER: 'member',
-    ADMIN: 'admin',
-    HUB_MANAGER: 'hub_manager',
-    SECURITY: 'security',
-    INSTRUCTOR: 'instructor',
+    MEMBER: 'Member',
+    ADMIN: 'Admin',
+    HUB_MANAGER: 'Hub Manager',
+    SECURITY: 'Security',
+    INSTRUCTOR: 'Instructor',
 };
 
 export const MEMBERSHIP_TIERS = [

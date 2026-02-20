@@ -73,7 +73,7 @@ export default function DashboardPage() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl md:text-3xl font-bold">
-                    {isAdmin ? 'Admin Dashboard' : `Welcome back, ${user?.firstName}!`}
+                    {isAdmin ? 'Admin Dashboard' : `Welcome back, ${user?.name?.split(' ')[0]}!`}
                 </h1>
                 <p className="text-surface-500 mt-1">
                     {isAdmin ? 'Overview of hub operations and analytics' : 'Here\'s what\'s happening with your access'}
