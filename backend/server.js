@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
     try {
         await sequelize.authenticate();
-        console.log('Database connected successfully (SQLite).');
+        console.log('Database connected successfully (NeonDB/PostgreSQL).');
 
         // Sync models (optional, use migrations in production)
         // await sequelize.sync(); 

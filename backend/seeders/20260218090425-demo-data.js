@@ -16,7 +16,7 @@ module.exports = {
 
     // Get Tier IDs
     const tierRows = await queryInterface.sequelize.query(
-      `SELECT id, name FROM AccessTiers;`
+      `SELECT id, name FROM "AccessTiers";`
     );
     const tierMap = {};
     tierRows[0].forEach(t => tierMap[t.name] = t.id);
@@ -70,7 +70,7 @@ module.exports = {
 
     // Get User IDs
     const userRows = await queryInterface.sequelize.query(
-      `SELECT id, email FROM Users;`
+      `SELECT id, email FROM "Users";`
     );
     const userMap = {};
     userRows[0].forEach(u => userMap[u.email] = u.id);
