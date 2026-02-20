@@ -10,11 +10,6 @@ lerna-debug.log*
 # Node
 node_modules
 .npm
-package-lock.json
-# Ideally package-lock.json IS checked in, unless using yarn only. 
-# Reconsidering: standard practice IS to check in lock files. 
-# Removing package-lock.json from ignore list.
-# But I will ignore other lock files if not used.
 yarn.lock
 pnpm-lock.yaml
 
