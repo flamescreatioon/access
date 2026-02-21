@@ -118,6 +118,8 @@ export default function ScannerPage() {
     const [deviceStatus, setDeviceStatus] = useState(null);
     const [deviceLoading, setDeviceLoading] = useState(true);
     const [scanning, setScanning] = useState(false);
+    const [isStarting, setIsStarting] = useState(false);
+
     const [flashOn, setFlashOn] = useState(false);
     const [scanResult, setScanResult] = useState(null);
     const [decisionLoading, setDecisionLoading] = useState(false);
@@ -154,7 +156,14 @@ export default function ScannerPage() {
 
     // Start camera scanning
     const startScanning = useCallback(async () => {
-        if (!scannerRef.current) return;
+        if (!scannerRef.current || isStarting) return;
+        setIsStarting(true);
+
+        // Check for secure context (HTTPS) — CRITICAL for mobile camera access
+        if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+            showToast('❌ Error: Camera requires HTTPS for mobile access');
+            console.error('Insecure context: Browser will block camera access.');
+        }
 
         // Clean up any leftover scanner DOM content
         if (html5QrRef.current) {
@@ -163,58 +172,68 @@ export default function ScannerPage() {
         }
 
         try {
+            showToast('⏳ Loading scanner library...');
             const { Html5Qrcode } = await import('html5-qrcode');
+
+            showToast('🔍 Searching for cameras...');
             const scanner = new Html5Qrcode('scanner-viewport');
             html5QrRef.current = scanner;
 
             const onScanSuccess = (decodedText) => {
+                showToast('🎯 Code detected! Validating...');
                 if (handleScanRef.current) handleScanRef.current(decodedText);
             };
 
             const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
+                fps: 15,
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    const size = Math.floor(minEdge * 0.7);
+                    return { width: size, height: size };
+                },
+                aspectRatio: 1.0,
             };
 
+            showToast('📸 Requesting camera access...');
             try {
                 // Try rear camera first (mobile)
                 await scanner.start(
                     { facingMode: 'environment' },
                     config,
                     onScanSuccess,
+                    (errorMessage) => {
+                        // Ignored scan hints
+                    }
+                );
+                showToast('✅ Camera active');
+            } catch (rearCamError) {
+                console.warn('Rear camera failed, trying fallback...', rearCamError);
+                // Fallback: use any available camera (desktop webcam)
+                await scanner.start(
+                    { facingMode: 'user' },
+                    config,
+                    onScanSuccess,
                     () => { }
                 );
-            } catch (rearCamError) {
-                // Fallback: use any available camera (desktop webcam)
-                try {
-                    await scanner.start(
-                        { facingMode: 'user' },
-                        config,
-                        onScanSuccess,
-                        () => { }
-                    );
-                } catch (frontCamError) {
-                    // Last resort: try first available device
-                    const devices = await Html5Qrcode.getCameras();
-                    if (devices && devices.length > 0) {
-                        await scanner.start(
-                            devices[0].id,
-                            config,
-                            onScanSuccess,
-                            () => { }
-                        );
-                    } else {
-                        throw new Error('No cameras found on this device');
-                    }
-                }
+                showToast('✅ Camera active (fallback)');
             }
 
             setScanning(true);
         } catch (error) {
-            console.error('Camera error:', error);
-            showToast(`Camera error: ${error.message || 'unavailable'}`);
+            console.error('Detailed camera error:', error);
+            const errorMsg = error.message || 'unknown error';
+            if (errorMsg.includes('Permission')) {
+                showToast('🚫 Camera permission denied');
+            } else if (errorMsg.includes('NotFound')) {
+                showToast('❓ No camera found on this device');
+            } else {
+                showToast(`❌ Camera error: ${errorMsg}`);
+            }
+            html5QrRef.current = null;
+        } finally {
+            setIsStarting(false);
         }
-    }, []);
+    }, [isStarting]);
 
     const stopScanning = useCallback(async () => {
         if (html5QrRef.current) {
@@ -363,9 +382,18 @@ export default function ScannerPage() {
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
                     <div className="flex items-center justify-center gap-4">
                         {!scanning ? (
-                            <button onClick={startScanning}
-                                className="px-8 py-3 rounded-2xl bg-primary-500 text-white font-semibold shadow-lg shadow-primary-500/30 hover:bg-primary-600 transition-all flex items-center gap-2">
-                                <Camera className="w-5 h-5" /> Start Scanning
+                            <button onClick={startScanning} disabled={isStarting}
+                                className="px-8 py-3 rounded-2xl bg-primary-500 text-white font-semibold shadow-lg shadow-primary-500/30 hover:bg-primary-600 transition-all flex items-center gap-2 disabled:opacity-50">
+                                {isStarting ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Starting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Camera className="w-5 h-5" /> Start Scanning
+                                    </>
+                                )}
                             </button>
                         ) : (
                             <>

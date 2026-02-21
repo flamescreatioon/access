@@ -84,7 +84,10 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
                         <div className="text-white">
                             <h2 className="text-xl font-bold">{user.name}</h2>
                             <p className="text-sm opacity-80 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> {user.email}</p>
-                            <span className="mt-1 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20">
+                            {detail?.phone && (
+                                <p className="text-sm opacity-80 flex items-center gap-1 mt-0.5"><Smartphone className="w-3.5 h-3.5" /> {detail.phone}</p>
+                            )}
+                            <span className="mt-2 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20">
                                 {user.role || 'No role yet'}
                             </span>
                         </div>

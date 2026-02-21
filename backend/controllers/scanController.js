@@ -1,4 +1,5 @@
 const { User, Membership, AccessTier, AccessLog, Device } = require('../models');
+const jwt = require('jsonwebtoken');
 
 // POST /api/v1/scan/validate — Validate a scanned QR token
 exports.validateScan = async (req, res) => {
@@ -27,49 +28,68 @@ exports.validateScan = async (req, res) => {
             effectiveDeviceId = device.id;
         }
 
-        // 2. Parse QR token — format: IHAP:{userId}:{timestamp}:{hash}
-        const parts = (qr_token || '').split(':');
-        if (parts.length < 4 || parts[0] !== 'IHAP') {
-            // Create denied log
-            await AccessLog.create({
-                user_id: null,
-                method: 'qr_scan',
-                decision: 'Deny',
-                device_id: effectiveDeviceId,
-                manager_id: managerId,
-                scan_payload: qr_token,
-                backend_decision: 'DENIED',
-                deny_reason: 'invalid_token',
-                location_id,
-            });
+        // 2. Parse / Verify QR token
+        let memberId = null;
+        let isLegacy = false;
+
+        if (qr_token && qr_token.startsWith('IHAP:')) {
+            // Legacy IHAP format: IHAP:{userId}:{timestamp}:{hash}
+            const parts = qr_token.split(':');
+            if (parts.length >= 4) {
+                memberId = parts[1];
+                const tokenTimestamp = parseInt(parts[2]);
+                const currentTimestamp = Math.floor(Date.now() / 30000);
+                if (Math.abs(currentTimestamp - tokenTimestamp) > 2) {
+                    await AccessLog.create({
+                        user_id: memberId,
+                        method: 'qr_scan',
+                        decision: 'Deny',
+                        device_id: effectiveDeviceId,
+                        manager_id: managerId,
+                        scan_payload: qr_token,
+                        backend_decision: 'DENIED',
+                        deny_reason: 'expired_token',
+                        location_id,
+                    });
+                    return res.json({
+                        status: 'DENIED',
+                        reason: 'expired_token',
+                        message: 'QR code has expired. Ask member to refresh.',
+                    });
+                }
+                isLegacy = true;
+            }
+        } else {
+            // Modern JWT format
+            try {
+                const decoded = jwt.verify(qr_token, process.env.JWT_SECRET);
+                memberId = decoded.userId;
+            } catch (err) {
+                const reason = err.name === 'TokenExpiredError' ? 'expired_token' : 'invalid_token';
+                await AccessLog.create({
+                    user_id: null,
+                    method: 'qr_scan',
+                    decision: 'Deny',
+                    device_id: effectiveDeviceId,
+                    manager_id: managerId,
+                    scan_payload: qr_token,
+                    backend_decision: 'DENIED',
+                    deny_reason: reason,
+                    location_id,
+                });
+                return res.json({
+                    status: 'DENIED',
+                    reason,
+                    message: reason === 'expired_token' ? 'QR code has expired' : 'Invalid QR code format',
+                });
+            }
+        }
+
+        if (!memberId) {
             return res.json({
                 status: 'DENIED',
                 reason: 'invalid_token',
-                message: 'Invalid QR code format',
-            });
-        }
-
-        const memberId = parts[1];
-        const tokenTimestamp = parseInt(parts[2]);
-
-        // 3. Check token freshness (allow 60-second window for scanning)
-        const currentTimestamp = Math.floor(Date.now() / 30000);
-        if (Math.abs(currentTimestamp - tokenTimestamp) > 2) {
-            await AccessLog.create({
-                user_id: memberId,
-                method: 'qr_scan',
-                decision: 'Deny',
-                device_id: effectiveDeviceId,
-                manager_id: managerId,
-                scan_payload: qr_token,
-                backend_decision: 'DENIED',
-                deny_reason: 'expired_token',
-                location_id,
-            });
-            return res.json({
-                status: 'DENIED',
-                reason: 'expired_token',
-                message: 'QR code has expired. Ask member to refresh.',
+                message: 'Invalid QR code',
             });
         }
 
