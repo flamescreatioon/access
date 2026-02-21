@@ -5,6 +5,7 @@ import { useBookingStore } from '../../stores/bookingStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useOnboardingStore } from '../../stores/onboardingStore';
+import { ROLES } from '../../lib/mockData';
 import SetupTracker from '../../components/onboarding/SetupTracker';
 import {
     CreditCard, CalendarDays, Activity, Users, TrendingUp,
@@ -97,7 +98,8 @@ export default function DashboardPage() {
     const { unreadCount, fetchNotifications } = useNotificationStore();
     const { status: onboardingStatus, fetchStatus: fetchOnboardingStatus } = useOnboardingStore();
 
-    const isAdmin = user?.role === 'Admin' || user?.role === 'Hub Manager';
+    const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+    const isSecurity = user?.role === ROLES.SECURITY;
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -105,10 +107,12 @@ export default function DashboardPage() {
             setLoading(true);
 
             // Core data needed for onboarding/status
-            await Promise.all([
-                fetchOnboardingStatus(),
-                fetchNotifications()
-            ]);
+            const status = await fetchOnboardingStatus();
+            if (status?.user) {
+                const { updateUser } = useAuthStore.getState();
+                updateUser(status.user);
+            }
+            await fetchNotifications();
 
             // Only fetch restricted data if user is fully active
             // Note: fetchOnboardingStatus must complete first to know activation status
@@ -119,11 +123,21 @@ export default function DashboardPage() {
     useEffect(() => {
         const loadActiveData = async () => {
             if (onboardingStatus?.activationStatus === 'ACTIVE') {
-                await Promise.all([
-                    fetchBookings(),
-                    fetchLogs(),
-                    isAdmin ? fetchAllMembers() : fetchCurrentMembership(user.id)
-                ]);
+                const tasks = [fetchBookings()];
+
+                // Only admins and security can fetch logs
+                if (isAdmin || isSecurity) {
+                    tasks.push(fetchLogs());
+                }
+
+                // Admins/Managers fetch all members, members fetch their own
+                if (isAdmin) {
+                    tasks.push(fetchAllMembers());
+                } else if (user?.id) {
+                    tasks.push(fetchCurrentMembership(user.id));
+                }
+
+                await Promise.all(tasks);
                 setLoading(false);
             } else if (onboardingStatus) {
                 // If not active, we still need membership info to check payment status in some cases

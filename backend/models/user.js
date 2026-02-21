@@ -4,11 +4,6 @@ const {
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
       User.hasOne(models.Membership, { foreignKey: 'user_id' });
       User.hasMany(models.AccessLog, { foreignKey: 'user_id' });
@@ -22,7 +17,19 @@ module.exports = (sequelize, DataTypes) => {
     name: DataTypes.STRING,
     email: DataTypes.STRING,
     password_hash: DataTypes.STRING,
-    role: DataTypes.STRING,
+    role: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null
+    },
+    department: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    level: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     account_status: {
       type: DataTypes.STRING,
       defaultValue: 'INVITED'
@@ -33,7 +40,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     activation_status: {
       type: DataTypes.STRING,
-      defaultValue: 'INACTIVE'
+      defaultValue: 'INCOMPLETE'
+    },
+    payment_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'NOT_REQUESTED'
     },
     first_login_required: {
       type: DataTypes.BOOLEAN,

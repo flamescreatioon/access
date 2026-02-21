@@ -56,6 +56,14 @@ export default function Sidebar({ collapsed, onToggle }) {
         : user?.role === ROLES.HUB_MANAGER ? hubManagerNav
             : memberNav;
 
+    // If no role set yet, show minimal nav
+    if (!user?.role) {
+        navItems = [
+            { to: '/dashboard', label: 'Setup Status', icon: Shield },
+            { to: '/onboarding/setup', label: 'Complete Setup', icon: Zap },
+        ];
+    }
+
     // Filter or adjust nav for inactive users
     if (isInactive) {
         navItems = [

@@ -20,13 +20,15 @@ exports.getProfile = async (req, res) => {
 // PUT /api/v1/users/profile — Update current user profile
 exports.updateProfile = async (req, res) => {
     try {
-        const { name, phone } = req.body;
+        const { name, phone, department, level } = req.body;
         const user = await User.findByPk(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const updates = {};
         if (name) updates.name = name;
         if (phone) updates.phone = phone;
+        if (department !== undefined) updates.department = department;
+        if (level !== undefined) updates.level = level;
 
         await user.update(updates);
 
@@ -144,7 +146,7 @@ exports.getUserById = async (req, res) => {
 // POST /api/v1/users — Admin: create a new user
 exports.createUser = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password, department, level } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -156,24 +158,31 @@ exports.createUser = async (req, res) => {
             return res.status(409).json({ message: 'A user with this email already exists' });
         }
 
-        const validRoles = ['Member', 'Admin', 'Hub Manager', 'Security', 'Instructor'];
-        const userRole = validRoles.includes(role) ? role : 'Member';
-
         const password_hash = await bcrypt.hash(password, 10);
 
         const user = await User.create({
             name,
             email,
             password_hash,
-            role: userRole,
+            role: null,
+            department: department || null,
+            level: level || null,
+            account_status: 'INVITED',
+            activation_status: 'INCOMPLETE',
+            payment_status: 'NOT_REQUESTED',
+            first_login_required: true,
+            profile_complete: false,
         });
 
-        // Return user without password_hash
         const userResponse = {
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
+            department: user.department,
+            level: user.level,
+            payment_status: user.payment_status,
+            activation_status: user.activation_status,
             createdAt: user.createdAt,
         };
 

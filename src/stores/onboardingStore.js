@@ -21,17 +21,43 @@ export const useOnboardingStore = create((set, get) => ({
         }
     },
 
+    confirmDetails: async (data) => {
+        try {
+            await api.put('/onboarding/confirm-details', data);
+            await get().fetchStatus();
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Failed to confirm details' };
+        }
+    },
+
+    selectRole: async (role) => {
+        try {
+            await api.put('/onboarding/select-role', { role });
+            await get().fetchStatus();
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Failed to select role' };
+        }
+    },
+
+    confirmPaymentContact: async () => {
+        try {
+            await api.put('/onboarding/confirm-payment-contact');
+            await get().fetchStatus();
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Failed to confirm contact' };
+        }
+    },
+
     completeStep: async (stepId, data = {}) => {
-        // This will be called when a user completes a profile section, etc.
         try {
             await api.post(`/onboarding/complete/${stepId}`, data);
             await get().fetchStatus();
             return { success: true };
         } catch (error) {
-            return {
-                success: false,
-                error: error.response?.data?.message || 'Failed to complete step'
-            };
+            return { success: false, error: error.response?.data?.message || 'Failed to complete step' };
         }
     }
 }));

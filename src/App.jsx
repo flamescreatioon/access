@@ -35,7 +35,7 @@ function AppRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
-  const isInactive = user && user.activation_status !== 'ACTIVE';
+  const isInactive = user && (user.activation_status !== 'ACTIVE' || user.first_login_required);
 
   useEffect(() => {
     if (isAuthenticated && isInactive) {

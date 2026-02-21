@@ -10,7 +10,8 @@ const generateTokens = (user) => {
             email: user.email,
             role: user.role,
             activation_status: user.activation_status,
-            onboarding_status: user.onboarding_status
+            onboarding_status: user.onboarding_status,
+            payment_status: user.payment_status
         },
         process.env.JWT_SECRET,
         { expiresIn: '15m' }
@@ -72,9 +73,12 @@ exports.register = async (req, res) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                department: user.department,
+                level: user.level,
                 account_status: user.account_status,
                 onboarding_status: user.onboarding_status,
                 activation_status: user.activation_status,
+                payment_status: user.payment_status,
                 first_login_required: user.first_login_required,
                 profile_complete: user.profile_complete
             },
@@ -126,9 +130,12 @@ exports.login = async (req, res) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                department: user.department,
+                level: user.level,
                 account_status: user.account_status,
                 onboarding_status: user.onboarding_status,
                 activation_status: user.activation_status,
+                payment_status: user.payment_status,
                 first_login_required: user.first_login_required,
                 profile_complete: user.profile_complete
             },

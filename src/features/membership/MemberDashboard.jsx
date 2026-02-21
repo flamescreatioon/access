@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMembershipStore } from '../../stores/membershipStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -12,6 +13,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
 export default function MemberDashboard() {
+    const navigate = useNavigate();
     const { user } = useAuthStore();
     const {
         currentMembership, history, fetchCurrentMembership,
@@ -56,6 +58,9 @@ export default function MemberDashboard() {
         if (res.success) {
             toast.success(res.message);
             fetchHistory();
+            if (user.activation_status !== 'ACTIVE') {
+                navigate('/onboarding/setup');
+            }
         } else {
             toast.error(res.error);
         }

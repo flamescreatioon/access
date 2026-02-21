@@ -73,4 +73,14 @@ export const useMembershipStore = create((set, get) => ({
         }
         return results;
     },
+
+    generateQrToken: async () => {
+        try {
+            const response = await api.post('/access/generate-token');
+            return response.data.token;
+        } catch (error) {
+            console.error('Error generating QR token:', error);
+            return null;
+        }
+    },
 }));

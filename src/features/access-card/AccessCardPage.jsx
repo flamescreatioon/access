@@ -1,49 +1,93 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuthStore } from '../../stores/authStore';
 import { useMembershipStore } from '../../stores/membershipStore';
-import { generateQRToken } from '../../lib/mockData';
-import { Shield, Clock, RefreshCw, Wifi, WifiOff, Smartphone, ChevronLeft } from 'lucide-react';
+import {
+    Shield as ShieldIcon,
+    Clock as ClockIcon,
+    RefreshCw as RefreshIcon,
+    Wifi as WifiIcon,
+    WifiOff as WifiOffIcon,
+    Smartphone as PhoneIcon,
+    ChevronLeft as BackIcon,
+    Lock as LockIcon
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function AccessCardPage() {
     const { user } = useAuthStore();
-    const { currentMembership, generateQrToken } = useMembershipStore();
+    const { currentMembership, generateQrToken, fetchCurrentMembership } = useMembershipStore();
     const [qrToken, setQrToken] = useState('');
     const [timeLeft, setTimeLeft] = useState(30);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [generating, setGenerating] = useState(false);
+    const isGenerating = useRef(false);
+
+    // Initial load of membership if missing
+    useEffect(() => {
+        if (!currentMembership && user?.id) {
+            fetchCurrentMembership(user.id);
+        }
+    }, [user?.id, currentMembership, fetchCurrentMembership]);
 
     const generateNewToken = useCallback(async () => {
-        const token = await generateQrToken();
-        if (token) {
-            setQrToken(token);
-            setTimeLeft(30);
+        if (isGenerating.current) return;
+        isGenerating.current = true;
+        setGenerating(true);
+        try {
+            const token = await generateQrToken();
+            if (token) {
+                setQrToken(token);
+                setTimeLeft(30);
+            }
+        } finally {
+            isGenerating.current = false;
+            setGenerating(false);
         }
     }, [generateQrToken]);
 
     useEffect(() => {
-        generateNewToken();
-        const rotationInterval = setInterval(generateNewToken, 30000);
-        return () => clearInterval(rotationInterval);
-    }, [generateNewToken]);
+        if (currentMembership?.status === 'Active') {
+            generateNewToken();
+            const rotationInterval = setInterval(generateNewToken, 30000);
+            return () => clearInterval(rotationInterval);
+        }
+    }, [currentMembership?.status, generateNewToken]);
 
     useEffect(() => {
-        const countdown = setInterval(() => {
-            setTimeLeft(prev => (prev <= 1 ? 30 : prev - 1));
-        }, 1000);
+        let countdown;
+        if (currentMembership?.status === 'Active') {
+            countdown = setInterval(() => {
+                setTimeLeft(prev => (prev <= 1 ? 30 : prev - 1));
+            }, 1000);
+        }
         return () => clearInterval(countdown);
-    }, []);
+    }, [currentMembership?.status]);
 
     useEffect(() => {
         const onOnline = () => setIsOnline(true);
         const onOffline = () => setIsOnline(false);
         window.addEventListener('online', onOnline);
         window.addEventListener('offline', onOffline);
-        return () => { window.removeEventListener('online', onOnline); window.removeEventListener('offline', onOffline); };
+        return () => {
+            window.removeEventListener('online', onOnline);
+            window.removeEventListener('offline', onOffline);
+        };
     }, []);
 
-    const statusColor = currentMembership.status === 'active' ? 'text-success-500' : 'text-danger-500';
-    const statusBg = currentMembership.status === 'active' ? 'bg-success-500' : 'bg-danger-500';
+    if (!currentMembership) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+                <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <h2 className="text-xl font-bold mb-2">Syncing Your Access</h2>
+                <p className="text-surface-500 max-w-xs">Connecting to secure servers to verify your membership status...</p>
+            </div>
+        );
+    }
+
+    const isActive = currentMembership.status === 'Active';
+    const statusColor = isActive ? 'text-success-500' : 'text-danger-500';
+    const statusBg = isActive ? 'bg-success-500' : 'bg-danger-500';
     const circumference = 2 * Math.PI * 45;
     const progress = ((30 - timeLeft) / 30) * circumference;
 
@@ -52,103 +96,123 @@ export default function AccessCardPage() {
             {/* Header */}
             <div className="text-center relative">
                 <Link to="/dashboard" className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">
-                    <ChevronLeft className="w-5 h-5 text-surface-500" />
+                    <BackIcon className="w-5 h-5 text-surface-500" />
                 </Link>
                 <h1 className="text-2xl md:text-3xl font-bold">Access Card</h1>
-                <p className="text-surface-500 mt-1">Present this QR code at any scanner</p>
+                <p className="text-surface-500 mt-1">Present this QR code at any hub scanner</p>
             </div>
 
             {/* Main Card */}
-            <div className="bg-white dark:bg-surface-800/50 rounded-3xl border border-surface-200 dark:border-surface-700/50 shadow-xl overflow-hidden">
+            <div className={`bg-white dark:bg-surface-800/50 rounded-[2.5rem] border ${isActive ? 'border-surface-200 dark:border-surface-700/50' : 'border-danger-200 dark:border-danger-900/30 ring-4 ring-danger-500/5'} shadow-2xl overflow-hidden transition-all duration-500`}>
                 {/* Card Header */}
-                <div className="bg-primary-600 px-6 py-4">
+                <div className={`${isActive ? 'bg-primary-600' : 'bg-danger-600'} px-8 py-6 transition-colors duration-500`}>
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-white/80 text-sm">Innovation Hub</p>
-                            <p className="text-white font-bold text-lg">{user?.firstName} {user?.lastName}</p>
+                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">Innovation Hub Pass</p>
+                            <p className="text-white font-black text-xl tracking-tight">{user?.name || 'Hub Member'}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur text-white text-sm`}>
-                                {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
-                                <span>{isOnline ? 'Live' : 'Offline'}</span>
-                            </div>
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur text-white text-[10px] font-black uppercase tracking-wider`}>
+                            {isOnline ? <WifiIcon className="w-3.5 h-3.5" /> : <WifiOffIcon className="w-3.5 h-3.5" />}
+                            <span>{isOnline ? 'Encrypted' : 'Offline'}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* QR Code Section */}
-                <div className="p-8 flex flex-col items-center">
-                    <div className="relative">
-                        {/* Countdown Ring */}
-                        <svg className="absolute -inset-4 w-[calc(100%+32px)] h-[calc(100%+32px)]" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-surface-200 dark:text-surface-700" />
-                            <circle
-                                cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2.5"
-                                className="text-primary-500"
-                                strokeDasharray={circumference}
-                                strokeDashoffset={progress}
-                                strokeLinecap="round"
-                                transform="rotate(-90 50 50)"
-                                style={{ transition: 'stroke-dashoffset 1s linear' }}
-                            />
-                        </svg>
+                <div className="p-10 flex flex-col items-center">
+                    {isActive ? (
+                        <div className="relative">
+                            {/* Countdown Ring */}
+                            <svg className="absolute -inset-6 w-[calc(100%+48px)] h-[calc(100%+48px)]" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-surface-100 dark:text-surface-800" />
+                                <circle
+                                    cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2.5"
+                                    className="text-primary-500"
+                                    strokeDasharray={circumference}
+                                    strokeDashoffset={progress}
+                                    strokeLinecap="round"
+                                    transform="rotate(-90 50 50)"
+                                    style={{ transition: 'stroke-dashoffset 1s linear' }}
+                                />
+                            </svg>
 
-                        {/* QR Code */}
-                        <div className="relative bg-white p-4 rounded-2xl">
-                            <QRCodeSVG
-                                value={qrToken || 'loading'}
-                                size={200}
-                                level="H"
-                                includeMargin={false}
-                                fgColor="#0f172a"
-                                bgColor="#ffffff"
-                            />
-                            {/* Anti-screenshot overlay */}
-                            <div className="qr-overlay rounded-2xl" />
+                            {/* QR Code Container */}
+                            <div className="relative bg-white p-5 rounded-3xl shadow-lg">
+                                <QRCodeSVG
+                                    value={qrToken || 'waiting_for_token'}
+                                    size={220}
+                                    level="H"
+                                    includeMargin={false}
+                                    fgColor="#0f172a"
+                                    bgColor="#ffffff"
+                                />
+                                {/* Anti-screenshot overlay (CSS based) */}
+                                <div className="qr-overlay rounded-3xl" />
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="py-12 px-6 text-center space-y-4">
+                            <div className="w-20 h-20 bg-danger-500/10 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                                <ShieldIcon className="w-10 h-10 text-danger-500" />
+                            </div>
+                            <h3 className="text-xl font-black text-danger-600 dark:text-danger-400 uppercase tracking-tight">Access Locked</h3>
+                            <p className="text-sm text-surface-500 max-w-xs mx-auto font-medium">
+                                Your membership is currently {currentMembership?.status?.toLowerCase() || 'inactive'}. Please contact support or renew.
+                            </p>
+                        </div>
+                    )}
 
-                    {/* Timer */}
-                    <div className="flex items-center gap-2 mt-6 text-sm">
-                        <Clock className="w-4 h-4 text-surface-400" />
-                        <span className="text-surface-500">Refreshes in</span>
-                        <span className="font-mono font-bold text-primary-600 dark:text-primary-400 text-lg">{timeLeft}s</span>
-                    </div>
+                    {isActive && (
+                        <>
+                            {/* Timer */}
+                            <div className="flex items-center gap-2 mt-10 px-4 py-2 bg-surface-50 dark:bg-surface-900 rounded-full border border-surface-100 dark:border-surface-700">
+                                <ClockIcon className="w-4 h-4 text-primary-500" />
+                                <span className="text-xs font-bold text-surface-500">Refreshing in</span>
+                                <span className="font-mono font-black text-primary-600 dark:text-primary-400">{timeLeft}s</span>
+                            </div>
 
-                    {/* Manual Refresh */}
-                    <button
-                        onClick={generateNewToken}
-                        className="mt-3 flex items-center gap-2 text-sm text-primary-500 hover:text-primary-600 transition-colors">
-                        <RefreshCw className="w-4 h-4" /> Refresh Now
-                    </button>
+                            {/* Manual Refresh */}
+                            <button
+                                onClick={generateNewToken}
+                                disabled={generating}
+                                className="mt-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-surface-400 hover:text-primary-500 transition-colors disabled:opacity-50">
+                                <RefreshIcon className={`w-3 h-3 ${generating ? 'animate-spin' : ''}`} />
+                                {generating ? 'Generating...' : 'Refresh Token'}
+                            </button>
+                        </>
+                    )}
                 </div>
 
                 {/* Status Footer */}
-                <div className="border-t border-surface-200 dark:border-surface-700/50 px-6 py-4">
+                <div className="border-t border-surface-100 dark:border-surface-800 px-8 py-5 bg-surface-50/50 dark:bg-surface-900/30">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${statusBg} pulse-dot`} />
-                            <span className={`text-sm font-semibold ${statusColor}`}>
-                                {currentMembership.status === 'active' ? 'Access Granted' : 'Access Denied'}
+                        <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${statusBg} ${isActive ? 'animate-pulse' : ''}`} />
+                            <span className={`text-xs font-black uppercase tracking-wider ${statusColor}`}>
+                                {isActive ? 'Validated Access' : 'Inactive Account'}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-sm text-surface-500">
-                            <Shield className="w-4 h-4" />
-                            <span>{currentMembership.tier.name}</span>
+                        <div className="flex items-center gap-2 text-surface-500">
+                            <ShieldIcon className="w-4 h-4" />
+                            <span className="text-xs font-bold">{currentMembership?.AccessTier?.name || 'Standard'} Tier</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Info Cards */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-4 border border-surface-200 dark:border-surface-700/50 text-center">
-                    <Smartphone className="w-6 h-6 mx-auto text-primary-500 mb-2" />
-                    <p className="text-xs text-surface-500">Hold your phone near the scanner</p>
+            {/* Instruction Cards */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-surface-800/50 rounded-3xl p-6 border border-surface-200 dark:border-surface-700/50 text-center space-y-2">
+                    <div className="w-10 h-10 bg-primary-500/10 rounded-xl flex items-center justify-center mx-auto">
+                        <PhoneIcon className="w-5 h-5 text-primary-500" />
+                    </div>
+                    <p className="text-[10px] font-bold text-surface-500 leading-tight">Hold phone 2-4 inches from the scanner lens</p>
                 </div>
-                <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-4 border border-surface-200 dark:border-surface-700/50 text-center">
-                    <Shield className="w-6 h-6 mx-auto text-success-500 mb-2" />
-                    <p className="text-xs text-surface-500">Token changes every 30 seconds</p>
+                <div className="bg-white dark:bg-surface-800/50 rounded-3xl p-6 border border-surface-200 dark:border-surface-700/50 text-center space-y-2">
+                    <div className="w-10 h-10 bg-success-500/10 rounded-xl flex items-center justify-center mx-auto">
+                        <LockIcon className="w-5 h-5 text-success-500" />
+                    </div>
+                    <p className="text-[10px] font-bold text-surface-500 leading-tight">Rolling tokens prevent unauthorized screenshots</p>
                 </div>
             </div>
         </div>

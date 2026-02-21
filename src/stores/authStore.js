@@ -60,6 +60,13 @@ export const useAuthStore = create((set, get) => ({
         set({ user: null, token: null, isAuthenticated: false, loginError: null });
     },
 
+    updateUser: (userData) => {
+        const currentUser = get().user;
+        const updatedUser = { ...currentUser, ...userData };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        set({ user: updatedUser });
+    },
+
     startInactivityTimer: () => {
         if (inactivityTimer) clearTimeout(inactivityTimer);
         inactivityTimer = setTimeout(() => {

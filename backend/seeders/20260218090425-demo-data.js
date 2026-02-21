@@ -56,6 +56,18 @@ module.exports = {
         createdAt: now,
         updatedAt: now,
       },
+      {
+        name: 'Student Club',
+        permissions: JSON.stringify(['Standard Access', 'Coworking Space', 'Student Benefits']),
+        color: '#22c55e',
+        price: 1500.00,
+        max_booking_hours: 8,
+        max_rooms: 1,
+        priority_booking: false,
+        peak_access: false,
+        createdAt: now,
+        updatedAt: now,
+      },
     ];
     await queryInterface.bulkInsert('AccessTiers', tiers, {});
 
@@ -69,37 +81,58 @@ module.exports = {
     const users = [
       {
         name: 'Admin User', email: 'admin@hub.com', password_hash: passwordHash, role: 'Admin',
-        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED',
+        first_login_required: false, profile_complete: true, payment_status: 'NOT_REQUIRED',
+        department: null, level: null,
         createdAt: now, updatedAt: now
       },
       {
         name: 'Hub Manager', email: 'manager@hub.com', password_hash: passwordHash, role: 'Hub Manager',
-        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED',
+        first_login_required: false, profile_complete: true, payment_status: 'NOT_REQUIRED',
+        department: null, level: null,
         createdAt: now, updatedAt: now
       },
       {
         name: 'Security Officer', email: 'security@hub.com', password_hash: passwordHash, role: 'Security',
-        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED',
+        first_login_required: false, profile_complete: true, payment_status: 'NOT_REQUIRED',
+        department: null, level: null,
         createdAt: now, updatedAt: now
       },
       {
-        name: 'John Member', email: 'member@hub.com', password_hash: passwordHash, role: 'Member',
-        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        name: 'John Member', email: 'member@hub.com', password_hash: passwordHash, role: 'Student',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED',
+        first_login_required: false, profile_complete: true, payment_status: 'PAID',
+        department: 'Computer Science', level: '300',
         createdAt: now, updatedAt: now
       },
       {
-        name: 'New Invitee', email: 'new@hub.com', password_hash: passwordHash, role: 'Member',
-        account_status: 'INVITED', activation_status: 'INACTIVE', onboarding_status: 'NOT_STARTED', first_login_required: true, profile_complete: false,
+        name: 'New Invitee', email: 'new@hub.com', password_hash: passwordHash, role: null,
+        account_status: 'INVITED', activation_status: 'INCOMPLETE', onboarding_status: 'NOT_STARTED',
+        first_login_required: true, profile_complete: false, payment_status: 'NOT_REQUESTED',
+        department: null, level: null,
         createdAt: now, updatedAt: now
       },
       {
-        name: 'Jane Pro', email: 'pro@hub.com', password_hash: passwordHash, role: 'Member',
-        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        name: 'Jane Pro', email: 'pro@hub.com', password_hash: passwordHash, role: 'Student',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED',
+        first_login_required: false, profile_complete: true, payment_status: 'PAID',
+        department: 'Electrical Engineering', level: '400',
         createdAt: now, updatedAt: now
       },
       {
-        name: 'Alex VIP', email: 'vip@hub.com', password_hash: passwordHash, role: 'Member',
-        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        name: 'Alex VIP', email: 'vip@hub.com', password_hash: passwordHash, role: 'Student',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED',
+        first_login_required: false, profile_complete: true, payment_status: 'PAID',
+        department: 'Mechanical Engineering', level: '500',
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'Pending Student', email: 'pending@hub.com', password_hash: passwordHash, role: 'Student',
+        account_status: 'INVITED', activation_status: 'PENDING_VERIFICATION', onboarding_status: 'AWAITING_VERIFICATION',
+        first_login_required: true, profile_complete: true, payment_status: 'AWAITING_ADMIN_CONFIRMATION',
+        department: 'Physics', level: '200', phone: '+234801234567',
         createdAt: now, updatedAt: now
       },
     ];
@@ -111,7 +144,7 @@ module.exports = {
 
     // 3. Create Memberships
     const memberships = [
-      { user_id: userMap['member@hub.com'], tier_id: tierMap['Basic'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
+      { user_id: userMap['member@hub.com'], tier_id: tierMap['Student Club'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
       { user_id: userMap['pro@hub.com'], tier_id: tierMap['Pro'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
       { user_id: userMap['vip@hub.com'], tier_id: tierMap['VIP'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
       { user_id: userMap['admin@hub.com'], tier_id: tierMap['VIP'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 10, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
