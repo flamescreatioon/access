@@ -22,5 +22,7 @@ app.use('/api/v1/access', require('./routes/access'));
 app.use('/api/v1/memberships', require('./routes/memberships'));
 app.use('/api/v1/bookings', require('./routes/bookings'));
 app.use('/api/v1/users', require('./routes/users'));
+app.use('/api/v1/scan', require('./routes/scan'));
+app.use('/api/v1/devices', require('./routes/devices'));
 
 module.exports = app;

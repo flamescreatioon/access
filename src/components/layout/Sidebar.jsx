@@ -4,7 +4,8 @@ import { ROLES } from '../../lib/mockData';
 import {
     LayoutDashboard, CreditCard, CalendarDays, Activity,
     Crown, Users, Shield, MonitorSmartphone, BookOpen,
-    UserCheck, UserPlus, Settings, LogOut, Zap
+    UserCheck, UserPlus, Settings, LogOut, Zap,
+    ScanLine, Smartphone, History
 } from 'lucide-react';
 
 const memberNav = [
@@ -15,8 +16,20 @@ const memberNav = [
     { to: '/membership', label: 'Membership', icon: Crown },
 ];
 
+const hubManagerNav = [
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/scanner', label: 'Scanner', icon: ScanLine },
+    { to: '/scan-history', label: 'Scan History', icon: History },
+    { to: '/device-setup', label: 'Device Setup', icon: Smartphone },
+    { to: '/members', label: 'Members', icon: Users },
+    { to: '/logs', label: 'Logs', icon: Activity },
+    { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/visitors', label: 'Visitors', icon: UserCheck },
+];
+
 const adminNav = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/scanner', label: 'Scanner', icon: ScanLine },
     { to: '/members', label: 'Members', icon: Users },
     { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/access-rules', label: 'Access Rules', icon: Shield },
@@ -28,8 +41,9 @@ const adminNav = [
 
 export default function Sidebar({ collapsed, onToggle }) {
     const { user, logout } = useAuthStore();
-    const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
-    const navItems = isAdmin ? adminNav : memberNav;
+    const navItems = user?.role === ROLES.ADMIN ? adminNav
+        : user?.role === ROLES.HUB_MANAGER ? hubManagerNav
+            : memberNav;
 
     return (
         <aside className={`hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 transition-all duration-300 border-r border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900

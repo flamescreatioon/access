@@ -16,6 +16,9 @@ import ProfilePage from './features/profile/ProfilePage';
 import AccessRulesPage from './features/admin/AccessRulesPage';
 import DevicesPage from './features/admin/DevicesPage';
 import UserManagement from './features/admin/UserManagement';
+import ScannerPage from './features/scanner/ScannerPage';
+import DeviceActivation from './features/scanner/DeviceActivation';
+import ScanHistory from './features/scanner/ScanHistory';
 import OfflinePage from './pages/OfflinePage';
 import InstallPrompt from './components/InstallPrompt';
 import { ROLES } from './lib/mockData';
@@ -70,6 +73,23 @@ function AppRoutes() {
         <Route path="/users" element={
           <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
             <UserManagement />
+          </AuthGuard>
+        } />
+
+        {/* Hub Manager Scanner routes */}
+        <Route path="/scanner" element={
+          <AuthGuard allowedRoles={[ROLES.HUB_MANAGER, ROLES.ADMIN]}>
+            <ScannerPage />
+          </AuthGuard>
+        } />
+        <Route path="/device-setup" element={
+          <AuthGuard allowedRoles={[ROLES.HUB_MANAGER, ROLES.ADMIN]}>
+            <DeviceActivation />
+          </AuthGuard>
+        } />
+        <Route path="/scan-history" element={
+          <AuthGuard allowedRoles={[ROLES.HUB_MANAGER, ROLES.ADMIN]}>
+            <ScanHistory />
           </AuthGuard>
         } />
       </Route>
