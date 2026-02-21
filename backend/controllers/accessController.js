@@ -105,3 +105,29 @@ exports.getAllLogs = async (req, res) => {
         res.status(500).json({ message: 'Error fetching logs', error: error.message });
     }
 };
+
+exports.myLastScan = async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+        // Look for any scan logs from the last 60 seconds
+        const lastScan = await AccessLog.findOne({
+            where: {
+                user_id: req.user.id,
+                createdAt: { [Op.gte]: new Date(Date.now() - 60000) }
+            },
+            order: [['createdAt', 'DESC']]
+        });
+
+        if (!lastScan) {
+            return res.json({ status: 'No scan detected' });
+        }
+
+        res.json({
+            status: lastScan.decision, // Pending, Grant, Deny
+            scan_id: lastScan.id,
+            timestamp: lastScan.updatedAt
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching scan status', error: error.message });
+    }
+};

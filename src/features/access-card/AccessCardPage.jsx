@@ -10,9 +10,12 @@ import {
     WifiOff as WifiOffIcon,
     Smartphone as PhoneIcon,
     ChevronLeft as BackIcon,
-    Lock as LockIcon
+    Lock as LockIcon,
+    CheckCircle2,
+    XCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../../lib/api';
 
 export default function AccessCardPage() {
     const { user } = useAuthStore();
@@ -21,7 +24,9 @@ export default function AccessCardPage() {
     const [timeLeft, setTimeLeft] = useState(30);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [generating, setGenerating] = useState(false);
+    const [scanFeedback, setScanFeedback] = useState(null); // { status: 'Grant'|'Deny', id: string }
     const isGenerating = useRef(false);
+    const pollingRef = useRef(null);
 
     // Initial load of membership if missing
     useEffect(() => {
@@ -50,7 +55,29 @@ export default function AccessCardPage() {
         if (currentMembership?.status === 'Active') {
             generateNewToken();
             const rotationInterval = setInterval(generateNewToken, 30000);
-            return () => clearInterval(rotationInterval);
+
+            // Start polling for scan feedback
+            const checkStatus = async () => {
+                try {
+                    const res = await api.get('/access/my-last-scan');
+                    if (res.data.status === 'Grant' || res.data.status === 'Deny') {
+                        setScanFeedback(prev => {
+                            if (prev?.id === res.data.scan_id && prev?.status === res.data.status) return prev;
+                            return { status: res.data.status, id: res.data.scan_id };
+                        });
+                        // Clear feedback after 5 seconds
+                        setTimeout(() => setScanFeedback(null), 5000);
+                    }
+                } catch (err) {
+                    console.error('Status check failed:', err);
+                }
+            };
+            pollingRef.current = setInterval(checkStatus, 2000);
+
+            return () => {
+                clearInterval(rotationInterval);
+                if (pollingRef.current) clearInterval(pollingRef.current);
+            };
         }
     }, [currentMembership?.status, generateNewToken]);
 
@@ -93,6 +120,28 @@ export default function AccessCardPage() {
 
     return (
         <div className="max-w-lg mx-auto space-y-6 page-enter page-enter-active">
+            {/* Success/Denied Overlay */}
+            {scanFeedback && (
+                <div className="fixed inset-x-4 top-24 z-50 animate-in slide-in-from-top-10 duration-500">
+                    <div className={`p-6 rounded-[2rem] shadow-2xl backdrop-blur-xl border ${scanFeedback.status === 'Grant'
+                            ? 'bg-success-500/90 border-success-400 text-white'
+                            : 'bg-danger-500/90 border-danger-400 text-white'
+                        } flex items-center gap-4`}>
+                        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
+                            {scanFeedback.status === 'Grant' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-lg leading-tight">
+                                {scanFeedback.status === 'Grant' ? 'Access Granted!' : 'Access Denied'}
+                            </h3>
+                            <p className="text-sm opacity-90 font-medium mt-0.5">
+                                {scanFeedback.status === 'Grant' ? 'Welcome to the Hub.' : 'Please talk to the manager.'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="text-center relative">
                 <Link to="/dashboard" className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-surface-100 dark:bg-surface-800 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">

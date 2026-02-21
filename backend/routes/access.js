@@ -13,6 +13,7 @@ router.post('/generate-token', authenticateToken, onboarding, accessController.g
 router.post('/validate', authenticateDevice, accessController.validateAccess);
 
 // Get Logs (Admin Only)
+router.get('/my-last-scan', authenticateToken, accessController.myLastScan);
 router.get('/logs', authenticateToken, authorizeRole(['Admin', 'Security']), accessController.getAllLogs);
 
 module.exports = router;
