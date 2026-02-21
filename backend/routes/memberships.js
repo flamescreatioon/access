@@ -11,6 +11,7 @@ router.use(onboarding);
 // Public (Member) Routes
 router.get('/user/:userId', membershipController.getUserMembership);
 router.get('/history', membershipController.getMembershipHistory);
+router.get('/tiers', membershipController.getAllTiers);
 router.put('/auto-renew', membershipController.toggleAutoRenew);
 router.post('/upgrade', membershipController.requestUpgrade);
 

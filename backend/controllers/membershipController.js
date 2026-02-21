@@ -43,7 +43,7 @@ exports.getUserMembership = async (req, res) => {
         });
 
         if (!membership) {
-            return res.status(404).json({ message: 'No active membership found' });
+            return res.json(null);
         }
 
         res.json(membership);
@@ -121,5 +121,15 @@ exports.getMembershipHistory = async (req, res) => {
         res.json(history);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching history', error: error.message });
+    }
+};
+
+// GET /api/v1/memberships/tiers — Get all access tiers
+exports.getAllTiers = async (req, res) => {
+    try {
+        const tiers = await AccessTier.findAll();
+        res.json(tiers);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching tiers', error: error.message });
     }
 };

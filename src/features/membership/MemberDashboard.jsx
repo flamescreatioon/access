@@ -30,7 +30,7 @@ export default function MemberDashboard() {
 
     const fetchTiers = async () => {
         try {
-            const res = await api.get('/access/tiers');
+            const res = await api.get('/memberships/tiers');
             setTiers(res.data);
         } catch (err) {
             console.error('Failed to fetch tiers', err);
@@ -61,7 +61,7 @@ export default function MemberDashboard() {
         }
     };
 
-    if (isLoading || !currentMembership) {
+    if (isLoading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh]">
                 <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -70,9 +70,9 @@ export default function MemberDashboard() {
         );
     }
 
-    const tier = currentMembership.AccessTier;
-    const daysLeft = Math.ceil((new Date(currentMembership.expiry_date) - new Date()) / 86400000);
-    const permissions = JSON.parse(tier.permissions || '[]');
+    const tier = currentMembership?.AccessTier;
+    const daysLeft = currentMembership ? Math.ceil((new Date(currentMembership.expiry_date) - new Date()) / 86400000) : 0;
+    const permissions = JSON.parse(tier?.permissions || '[]');
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 page-enter page-enter-active pb-12">
@@ -83,88 +83,113 @@ export default function MemberDashboard() {
 
             <div className="grid lg:grid-cols-3 gap-6">
                 {/* Current Plan Card */}
-                <div className="lg:col-span-2 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-surface-800 to-surface-950 p-8 text-white shadow-2xl">
+                <div className="lg:col-span-2 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-surface-800 to-surface-950 p-8 text-white shadow-2xl min-h-[300px] flex items-center">
                     <div className="absolute -right-12 -top-12 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl" />
                     <div className="absolute -left-8 -bottom-8 w-48 h-48 bg-accent-500/10 rounded-full blur-3xl" />
 
-                    <div className="relative z-10">
-                        <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
-                            <div>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                                        <Crown className="w-5 h-5 text-warning-400" />
+                    <div className="relative z-10 w-full">
+                        {currentMembership ? (
+                            <>
+                                <div className="flex items-start justify-between flex-wrap gap-4 mb-8">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                                                <Crown className="w-5 h-5 text-warning-400" />
+                                            </div>
+                                            <span className="text-xs font-black uppercase tracking-widest opacity-60">Subscriber Tier</span>
+                                        </div>
+                                        <h2 className="text-4xl font-black tracking-tight">{tier.name}</h2>
+                                        <p className="mt-2 text-white/50 font-bold uppercase tracking-widest text-xs">
+                                            Member since {format(new Date(currentMembership.createdAt), 'MMMM yyyy')}
+                                        </p>
                                     </div>
-                                    <span className="text-xs font-black uppercase tracking-widest opacity-60">Subscriber Tier</span>
+                                    <div className="text-right">
+                                        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl
+                                            ${currentMembership.status === 'Active' ? 'bg-success-500 text-white' : 'bg-danger-500 text-white'}`}>
+                                            <div className={`w-2 h-2 rounded-full ${currentMembership.status === 'Active' ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                                            {currentMembership.status}
+                                        </div>
+                                    </div>
                                 </div>
-                                <h2 className="text-4xl font-black tracking-tight">{tier.name}</h2>
-                                <p className="mt-2 text-white/50 font-bold uppercase tracking-widest text-xs">
-                                    Member since {format(new Date(currentMembership.createdAt), 'MMMM yyyy')}
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Price</p>
+                                        <p className="text-xl font-black">${tier.price}<span className="text-xs opacity-50">/mo</span></p>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Renewal</p>
+                                        <p className="text-xl font-black">{daysLeft > 0 ? `${daysLeft}d` : 'EXPIRED'}</p>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Status</p>
+                                        <p className="text-xl font-black">{currentMembership.auto_renew ? 'Auto' : 'Onetime'}</p>
+                                    </div>
+                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Access</p>
+                                        <p className="text-xl font-black">24/7</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex flex-wrap items-center gap-4">
+                                    <button
+                                        onClick={handleAutoRenew}
+                                        className="bg-white text-surface-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl">
+                                        <RefreshCcw className="w-4 h-4" />
+                                        {currentMembership.auto_renew ? 'Disable Auto-Renew' : 'Enable Auto-Renew'}
+                                    </button>
+                                    <p className="text-xs font-medium text-white/50 max-w-xs">
+                                        Next billing cycle starts on {format(new Date(currentMembership.expiry_date), 'MMM d, yyyy')}.
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-center py-8">
+                                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <Crown className="w-8 h-8 text-warning-400" />
+                                </div>
+                                <h2 className="text-3xl font-black tracking-tight mb-3">Choose Your Access Level</h2>
+                                <p className="text-primary-100/60 font-medium max-w-md mx-auto">
+                                    Select a membership tier below to unlock hub spaces, equipment bookings, and networking events.
                                 </p>
                             </div>
-                            <div className="text-right">
-                                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl
-                                    ${currentMembership.status === 'Active' ? 'bg-success-500 text-white' : 'bg-danger-500 text-white'}`}>
-                                    <div className={`w-2 h-2 rounded-full ${currentMembership.status === 'Active' ? 'bg-white animate-pulse' : 'bg-white'}`} />
-                                    {currentMembership.status}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Price</p>
-                                <p className="text-xl font-black">${tier.price}<span className="text-xs opacity-50">/mo</span></p>
-                            </div>
-                            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Renewal</p>
-                                <p className="text-xl font-black">{daysLeft > 0 ? `${daysLeft}d` : 'EXPIRED'}</p>
-                            </div>
-                            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Status</p>
-                                <p className="text-xl font-black">{currentMembership.auto_renew ? 'Auto' : 'Onetime'}</p>
-                            </div>
-                            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Access</p>
-                                <p className="text-xl font-black">24/7</p>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 flex flex-wrap items-center gap-4">
-                            <button
-                                onClick={handleAutoRenew}
-                                className="bg-white text-surface-900 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl">
-                                <RefreshCcw className="w-4 h-4" />
-                                {currentMembership.auto_renew ? 'Disable Auto-Renew' : 'Enable Auto-Renew'}
-                            </button>
-                            <p className="text-xs font-medium text-white/50 max-w-xs">
-                                Next billing cycle starts on {format(new Date(currentMembership.expiry_date), 'MMM d, yyyy')}.
-                            </p>
-                        </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Privileges List */}
-                <div className="bg-white dark:bg-surface-800/50 rounded-[2.5rem] p-8 border border-surface-200 dark:border-surface-700/50 shadow-sm">
+                <div className="bg-white dark:bg-surface-800/50 rounded-[2.5rem] p-8 border border-surface-200 dark:border-surface-700/50 shadow-sm overflow-hidden">
                     <h3 className="font-black text-sm uppercase tracking-widest text-surface-400 mb-6 flex items-center gap-2">
-                        <Star className="w-5 h-5 text-warning-500" /> Included Benefits
+                        <Star className="w-5 h-5 text-warning-500" /> {tier ? 'Included Benefits' : 'Select a Plan'}
                     </h3>
                     <div className="space-y-3">
-                        {permissions.map((priv, i) => (
-                            <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-surface-50 dark:bg-surface-800/50 group hover:translate-x-1 transition-transform">
-                                <div className="w-8 h-8 rounded-xl bg-success-500/10 flex items-center justify-center">
-                                    <Check className="w-4 h-4 text-success-500" />
+                        {tier ? (
+                            <>
+                                {permissions.map((priv, i) => (
+                                    <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-surface-50 dark:bg-surface-800/50 group hover:translate-x-1 transition-transform">
+                                        <div className="w-8 h-8 rounded-xl bg-success-500/10 flex items-center justify-center">
+                                            <Check className="w-4 h-4 text-success-500" />
+                                        </div>
+                                        <span className="text-sm font-bold text-surface-700 dark:text-surface-300">{priv}</span>
+                                    </div>
+                                ))}
+                                <div className="p-3 rounded-2xl bg-primary-500/5 flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-primary-500/10 flex items-center justify-center">
+                                        <Zap className="w-4 h-4 text-primary-500" />
+                                    </div>
+                                    <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                                        {tier.maxBookingHours === -1 ? 'Unlimited' : `${tier.maxBookingHours}h/daily`} bookings
+                                    </span>
                                 </div>
-                                <span className="text-sm font-bold text-surface-700 dark:text-surface-300">{priv}</span>
+                            </>
+                        ) : (
+                            <div className="py-12 text-center">
+                                <Sparkles className="w-10 h-10 text-primary-500/20 mx-auto mb-4" />
+                                <p className="text-xs font-bold text-surface-400 uppercase tracking-widest leading-relaxed">
+                                    Tier perks will appear<br />once a plan is selected
+                                </p>
                             </div>
-                        ))}
-                        <div className="p-3 rounded-2xl bg-primary-500/5 flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-primary-500/10 flex items-center justify-center">
-                                <Zap className="w-4 h-4 text-primary-500" />
-                            </div>
-                            <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                                {tier.maxBookingHours === -1 ? 'Unlimited' : `${tier.maxBookingHours}h/daily`} bookings
-                            </span>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -178,8 +203,8 @@ export default function MemberDashboard() {
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {tiers.map(t => {
-                        const isCurrent = t.id === tier.id;
-                        const isHigher = t.price > tier.price;
+                        const isCurrent = tier && t.id === tier.id;
+                        const isHigher = tier ? t.price > tier.price : true;
 
                         return (
                             <div key={t.id}
@@ -220,7 +245,7 @@ export default function MemberDashboard() {
                                         ${isCurrent
                                             ? 'bg-surface-100 dark:bg-surface-700 text-surface-400 cursor-not-allowed'
                                             : 'bg-primary-500 text-white hover:bg-primary-600 shadow-lg shadow-primary-500/20 active:scale-95'}`}>
-                                    {upgrading ? 'Processing...' : (isHigher ? 'Upgrade Now' : (isCurrent ? 'Current' : 'Select Plan'))}
+                                    {upgrading ? 'Processing...' : (isHigher ? 'Select Plan' : (isCurrent ? 'Current' : 'Select Plan'))}
                                     {!isCurrent && <ArrowUpRight className="w-4 h-4" />}
                                 </button>
                             </div>

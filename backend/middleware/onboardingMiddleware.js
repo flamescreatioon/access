@@ -12,6 +12,8 @@ const onboardingMiddleware = (req, res, next) => {
             '/api/v1/auth/refresh-token',
             '/api/v1/users/profile',
             '/api/v1/memberships/user',
+            '/api/v1/memberships/history',
+            '/api/v1/memberships/tiers',
             '/api/v1/onboarding/status',
             '/api/v1/onboarding/complete'
         ];

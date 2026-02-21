@@ -103,17 +103,36 @@ export default function DashboardPage() {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
+
+            // Core data needed for onboarding/status
             await Promise.all([
-                fetchBookings(),
-                fetchLogs(),
-                fetchNotifications(),
                 fetchOnboardingStatus(),
-                isAdmin ? fetchAllMembers() : fetchCurrentMembership(user.id)
+                fetchNotifications()
             ]);
-            setLoading(false);
+
+            // Only fetch restricted data if user is fully active
+            // Note: fetchOnboardingStatus must complete first to know activation status
         };
         if (user) load();
     }, [user, isAdmin]);
+
+    useEffect(() => {
+        const loadActiveData = async () => {
+            if (onboardingStatus?.activationStatus === 'ACTIVE') {
+                await Promise.all([
+                    fetchBookings(),
+                    fetchLogs(),
+                    isAdmin ? fetchAllMembers() : fetchCurrentMembership(user.id)
+                ]);
+                setLoading(false);
+            } else if (onboardingStatus) {
+                // If not active, we still need membership info to check payment status in some cases
+                // but let's keep it simple for now as SetupTracker handles its own logic
+                setLoading(false);
+            }
+        };
+        loadActiveData();
+    }, [onboardingStatus, isAdmin, user?.id]);
 
     if (loading) {
         return (
