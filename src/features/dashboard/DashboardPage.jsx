@@ -4,11 +4,13 @@ import { useMembershipStore } from '../../stores/membershipStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useNotificationStore } from '../../stores/notificationStore';
+import { useOnboardingStore } from '../../stores/onboardingStore';
+import SetupTracker from '../../components/onboarding/SetupTracker';
 import {
     CreditCard, CalendarDays, Activity, Users, TrendingUp,
     Shield, QrCode, AlertTriangle, ArrowUpRight, Clock,
     CheckCircle2, XCircle, MonitorSmartphone, Bell,
-    Wifi, WifiOff, Zap, BarChart3, UserCheck, Eye, Sparkles
+    Wifi, WifiOff, Zap, BarChart3, UserCheck, Eye, Sparkles, Crown, AlertCircle, Info
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -92,7 +94,8 @@ export default function DashboardPage() {
     const { currentMembership, members, fetchCurrentMembership, fetchAllMembers } = useMembershipStore();
     const { bookings, fetchBookings } = useBookingStore();
     const { logs, fetchLogs } = useLogsStore();
-    const { getUnreadCount, fetchNotifications } = useNotificationStore();
+    const { unreadCount, fetchNotifications } = useNotificationStore();
+    const { status: onboardingStatus, fetchStatus: fetchOnboardingStatus } = useOnboardingStore();
 
     const isAdmin = user?.role === 'Admin' || user?.role === 'Hub Manager';
     const [loading, setLoading] = useState(true);
@@ -104,6 +107,7 @@ export default function DashboardPage() {
                 fetchBookings(),
                 fetchLogs(),
                 fetchNotifications(),
+                fetchOnboardingStatus(),
                 isAdmin ? fetchAllMembers() : fetchCurrentMembership(user.id)
             ]);
             setLoading(false);
@@ -120,7 +124,35 @@ export default function DashboardPage() {
         );
     }
 
-    const unreadCount = getUnreadCount();
+    const unread = unreadCount;
+    const isFullyActive = onboardingStatus?.activationStatus === 'ACTIVE';
+
+    if (!isFullyActive && onboardingStatus) {
+        return (
+            <div className="space-y-8 page-enter page-enter-active max-w-4xl mx-auto py-8">
+                <header>
+                    <h1 className="text-4xl font-black tracking-tight">Complete Your Setup</h1>
+                    <p className="text-surface-500 mt-2 font-medium">Follow the steps below to activate your hub access.</p>
+                </header>
+                <div className="grid lg:grid-cols-3 gap-8 items-start">
+                    <div className="lg:col-span-2">
+                        <SetupTracker status={onboardingStatus} />
+                    </div>
+                    <div className="bg-primary-500 rounded-[2.5rem] p-8 text-white shadow-xl shadow-primary-500/20">
+                        <h3 className="text-xl font-black mb-4">Why is this locked?</h3>
+                        <p className="text-primary-100 text-sm font-medium mb-6">To ensure hub safety and operational excellence, all members must complete their profile and verify payment before full access is granted.</p>
+                        <Link
+                            to="/onboarding/setup"
+                            className="w-full py-4 bg-white text-primary-600 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-primary-50 transition-all"
+                        >
+                            Start Setup Now
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
     const upcomingBookingsCount = bookings.filter(b => b.status === 'confirmed' && new Date(b.start_time) > new Date()).length;
     const activeMembersCount = members.filter(m => m.status === 'Active').length;
 
@@ -138,9 +170,9 @@ export default function DashboardPage() {
                     </div>
                     <Link to="/notifications" className="relative p-3 bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 hover:border-primary-500/50 transition-all shadow-sm">
                         <Bell className="w-6 h-6 text-surface-500" />
-                        {unreadCount > 0 && (
+                        {unread > 0 && (
                             <span className="absolute top-2.5 right-2.5 w-5 h-5 bg-danger-500 text-white text-[10px] font-black border-2 border-white dark:border-surface-800 rounded-full flex items-center justify-center">
-                                {unreadCount}
+                                {unread}
                             </span>
                         )}
                     </Link>

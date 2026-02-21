@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const membershipController = require('../controllers/membershipController');
 const { authenticate, authorizeRole } = require('../middleware/auth');
+const onboarding = require('../middleware/onboardingMiddleware');
 
-// All membership routes require authentication
+// All membership routes require authentication and activation
 router.use(authenticate);
+router.use(onboarding);
 
 // Public (Member) Routes
 router.get('/user/:userId', membershipController.getUserMembership);

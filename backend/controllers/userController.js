@@ -17,6 +17,25 @@ exports.getProfile = async (req, res) => {
     }
 };
 
+// PUT /api/v1/users/profile — Update current user profile
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, phone } = req.body;
+        const user = await User.findByPk(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const updates = {};
+        if (name) updates.name = name;
+        if (phone) updates.phone = phone;
+
+        await user.update(updates);
+
+        res.json({ message: 'Profile updated', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating profile', error: error.message });
+    }
+};
+
 // GET /api/v1/users/sessions — Get active sessions
 exports.getSessions = async (req, res) => {
     try {

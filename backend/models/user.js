@@ -23,6 +23,27 @@ module.exports = (sequelize, DataTypes) => {
     email: DataTypes.STRING,
     password_hash: DataTypes.STRING,
     role: DataTypes.STRING,
+    account_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'INVITED'
+    },
+    onboarding_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'NOT_STARTED'
+    },
+    activation_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'INACTIVE'
+    },
+    first_login_required: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
+    profile_complete: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    phone: DataTypes.STRING,
     settings: {
       type: DataTypes.JSONB,
       defaultValue: {

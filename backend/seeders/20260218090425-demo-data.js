@@ -67,12 +67,41 @@ module.exports = {
     // 2. Create Users
     const passwordHash = await bcrypt.hash('password123', 10);
     const users = [
-      { name: 'Admin User', email: 'admin@hub.com', password_hash: passwordHash, role: 'Admin', createdAt: now, updatedAt: now },
-      { name: 'Hub Manager', email: 'manager@hub.com', password_hash: passwordHash, role: 'Hub Manager', createdAt: now, updatedAt: now },
-      { name: 'Security Officer', email: 'security@hub.com', password_hash: passwordHash, role: 'Security', createdAt: now, updatedAt: now },
-      { name: 'John Member', email: 'member@hub.com', password_hash: passwordHash, role: 'Member', createdAt: now, updatedAt: now },
-      { name: 'Jane Pro', email: 'pro@hub.com', password_hash: passwordHash, role: 'Member', createdAt: now, updatedAt: now },
-      { name: 'Alex VIP', email: 'vip@hub.com', password_hash: passwordHash, role: 'Member', createdAt: now, updatedAt: now },
+      {
+        name: 'Admin User', email: 'admin@hub.com', password_hash: passwordHash, role: 'Admin',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'Hub Manager', email: 'manager@hub.com', password_hash: passwordHash, role: 'Hub Manager',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'Security Officer', email: 'security@hub.com', password_hash: passwordHash, role: 'Security',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'John Member', email: 'member@hub.com', password_hash: passwordHash, role: 'Member',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'New Invitee', email: 'new@hub.com', password_hash: passwordHash, role: 'Member',
+        account_status: 'INVITED', activation_status: 'INACTIVE', onboarding_status: 'NOT_STARTED', first_login_required: true, profile_complete: false,
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'Jane Pro', email: 'pro@hub.com', password_hash: passwordHash, role: 'Member',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        createdAt: now, updatedAt: now
+      },
+      {
+        name: 'Alex VIP', email: 'vip@hub.com', password_hash: passwordHash, role: 'Member',
+        account_status: 'ACTIVE', activation_status: 'ACTIVE', onboarding_status: 'COMPLETED', first_login_required: false, profile_complete: true,
+        createdAt: now, updatedAt: now
+      },
     ];
     await queryInterface.bulkInsert('Users', users, {});
 
@@ -82,10 +111,10 @@ module.exports = {
 
     // 3. Create Memberships
     const memberships = [
-      { user_id: userMap['member@hub.com'], tier_id: tierMap['Basic'], status: 'Active', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
-      { user_id: userMap['pro@hub.com'], tier_id: tierMap['Pro'], status: 'Active', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
-      { user_id: userMap['vip@hub.com'], tier_id: tierMap['VIP'], status: 'Active', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
-      { user_id: userMap['admin@hub.com'], tier_id: tierMap['VIP'], status: 'Active', expiry_date: new Date(now.getFullYear() + 10, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
+      { user_id: userMap['member@hub.com'], tier_id: tierMap['Basic'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
+      { user_id: userMap['pro@hub.com'], tier_id: tierMap['Pro'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
+      { user_id: userMap['vip@hub.com'], tier_id: tierMap['VIP'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
+      { user_id: userMap['admin@hub.com'], tier_id: tierMap['VIP'], status: 'Active', payment_status: 'PAID', expiry_date: new Date(now.getFullYear() + 10, now.getMonth(), now.getDate()), createdAt: now, updatedAt: now },
     ];
     await queryInterface.bulkInsert('Memberships', memberships, {});
 

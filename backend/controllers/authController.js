@@ -5,7 +5,13 @@ const { recordAuditLog } = require('../utils/auditLogger');
 
 const generateTokens = (user) => {
     const accessToken = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
+        {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            activation_status: user.activation_status,
+            onboarding_status: user.onboarding_status
+        },
         process.env.JWT_SECRET,
         { expiresIn: '15m' }
     );
@@ -33,7 +39,12 @@ exports.register = async (req, res) => {
             name,
             email,
             password_hash,
-            role: userRole
+            role: userRole,
+            account_status: 'INVITED', // Admins provision, user starts as invited
+            onboarding_status: 'NOT_STARTED',
+            activation_status: 'INACTIVE',
+            first_login_required: true,
+            profile_complete: false
         });
 
         const tokens = generateTokens(user);
@@ -55,7 +66,20 @@ exports.register = async (req, res) => {
             req
         });
 
-        res.status(201).json({ user: { id: user.id, email: user.email, name: user.name, role: user.role }, ...tokens });
+        res.status(201).json({
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                account_status: user.account_status,
+                onboarding_status: user.onboarding_status,
+                activation_status: user.activation_status,
+                first_login_required: user.first_login_required,
+                profile_complete: user.profile_complete
+            },
+            ...tokens
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error registering user', error: error.message });
     }
@@ -96,7 +120,20 @@ exports.login = async (req, res) => {
             req
         });
 
-        res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role }, ...tokens });
+        res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                account_status: user.account_status,
+                onboarding_status: user.onboarding_status,
+                activation_status: user.activation_status,
+                first_login_required: user.first_login_required,
+                profile_complete: user.profile_complete
+            },
+            ...tokens
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error logging in', error: error.message });
     }

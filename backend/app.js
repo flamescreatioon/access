@@ -27,6 +27,7 @@ app.use('/api/v1/spaces', require('./routes/spaces'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/equipment', equipmentRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/onboarding', require('./routes/onboarding'));
 app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));
 

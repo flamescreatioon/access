@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const deviceController = require('../controllers/deviceController');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const onboarding = require('../middleware/onboardingMiddleware');
 
-// All device routes require authentication
+// All device routes require authentication and activation
 router.use(authenticateToken);
+router.use(onboarding);
 
 // Hub Manager routes
 router.post('/register', authorizeRole(['Hub Manager', 'Admin']), deviceController.registerDevice);

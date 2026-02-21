@@ -15,7 +15,7 @@ export default function Topbar({ onMenuToggle, menuOpen }) {
     const notifRef = useRef(null);
     const userRef = useRef(null);
     const navigate = useNavigate();
-    const unread = unreadCount();
+    const unread = unreadCount;
 
     useEffect(() => {
         const handleClick = (e) => {
@@ -81,8 +81,8 @@ export default function Topbar({ onMenuToggle, menuOpen }) {
                                             <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${typeColors[n.type]}`} />
                                             <div className="min-w-0">
                                                 <p className={`text-sm ${!n.read ? 'font-semibold' : 'font-medium'}`}>{n.title}</p>
-                                                <p className="text-xs text-surface-500 mt-0.5 line-clamp-2">{n.message}</p>
-                                                <p className="text-xs text-surface-400 mt-1">{formatDistanceToNow(new Date(n.time), { addSuffix: true })}</p>
+                                                <p className="text-xs text-surface-500 mt-0.5 line-clamp-2">{n.body}</p>
+                                                <p className="text-xs text-surface-400 mt-1">{formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}</p>
                                             </div>
                                         </button>
                                     ))

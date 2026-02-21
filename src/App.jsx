@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import { useThemeStore } from './stores/themeStore';
 import AppShell from './components/layout/AppShell';
@@ -24,13 +24,27 @@ import UserManagement from './features/admin/UserManagement';
 import ScannerPage from './features/scanner/ScannerPage';
 import DeviceActivation from './features/scanner/DeviceActivation';
 import ScanHistory from './features/scanner/ScanHistory';
+import OnboardingSetup from './features/onboarding/OnboardingSetup';
 import OfflinePage from './pages/OfflinePage';
 import InstallPrompt from './components/InstallPrompt';
 import { ROLES } from './lib/mockData';
+import { useLocation } from 'react-router-dom';
 
 function AppRoutes() {
   const { isAuthenticated, user } = useAuthStore();
+  const location = useLocation();
+  const navigate = useNavigate();
   const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+  const isInactive = user && user.activation_status !== 'ACTIVE';
+
+  useEffect(() => {
+    if (isAuthenticated && isInactive) {
+      const allowedPaths = ['/onboarding/setup', '/profile', '/notifications'];
+      if (!allowedPaths.includes(location.pathname)) {
+        navigate('/onboarding/setup');
+      }
+    }
+  }, [isAuthenticated, isInactive, location.pathname, navigate]);
 
   return (
     <Routes>
@@ -42,6 +56,7 @@ function AppRoutes() {
           <AppShell />
         </AuthGuard>
       }>
+        <Route path="/onboarding/setup" element={<OnboardingSetup />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/access-card" element={<AccessCardPage />} />
         <Route path="/membership" element={<MemberDashboard />} />

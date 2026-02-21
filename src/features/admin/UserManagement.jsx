@@ -81,35 +81,59 @@ function UserDetailDrawer({ user, onClose }) {
                             </div>
                         </div>
 
-                        {/* Membership */}
+                        {/* Membership & Status Management */}
                         <div>
                             <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                                <Crown className="w-4 h-4 text-warning-500" /> Membership
+                                <Crown className="w-4 h-4 text-warning-500" /> Membership & Status
                             </h3>
-                            {membership ? (
-                                <div className="bg-surface-50 dark:bg-surface-800 rounded-xl p-4 space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-surface-500">Tier</span>
-                                        <span className="font-medium">{membership.AccessTier?.name || 'N/A'}</span>
+                            <div className="bg-surface-50 dark:bg-surface-800 rounded-xl p-4 space-y-4">
+                                {membership ? (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-surface-500">Tier</span>
+                                            <span className="font-medium">{membership.AccessTier?.name || 'N/A'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Payment Status</span>
+                                            <select
+                                                value={membership.payment_status}
+                                                onChange={(e) => {
+                                                    api.put(`/onboarding/admin/activate/${user.id}`, { paymentStatus: e.target.value })
+                                                        .then(() => {
+                                                            setDetail(prev => ({
+                                                                ...prev,
+                                                                Memberships: prev.Memberships.map(m => m.id === membership.id ? { ...m, payment_status: e.target.value } : m)
+                                                            }));
+                                                        });
+                                                }}
+                                                className="bg-white dark:bg-surface-700 border border-surface-200 dark:border-surface-600 rounded-lg px-2 py-1 text-xs font-bold"
+                                            >
+                                                <option value="UNPAID">UNPAID</option>
+                                                <option value="PAID">PAID</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-surface-500">Status</span>
-                                        <span className={`font-medium ${membership.status === 'Active' ? 'text-success-500' : 'text-danger-500'}`}>
-                                            {membership.status}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-surface-500">Expires</span>
-                                        <span className="font-medium">
-                                            {membership.expiry_date ? format(new Date(membership.expiry_date), 'MMM d, yyyy') : 'N/A'}
-                                        </span>
-                                    </div>
+                                ) : (
+                                    <p className="text-sm text-surface-400 italic">No active membership</p>
+                                )}
+
+                                <div className="pt-2 border-t border-surface-100 dark:border-surface-700 mt-2 flex justify-between items-center">
+                                    <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Account Activation</span>
+                                    <button
+                                        onClick={() => {
+                                            const newStatus = detail.activation_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                                            api.put(`/onboarding/admin/activate/${user.id}`, { status: newStatus })
+                                                .then(() => setDetail(prev => ({ ...prev, activation_status: newStatus })));
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${detail?.activation_status === 'ACTIVE'
+                                            ? 'bg-success-500 text-white'
+                                            : 'bg-surface-200 dark:bg-surface-700 text-surface-500'
+                                            }`}
+                                    >
+                                        {detail?.activation_status === 'ACTIVE' ? 'Activated' : 'Activate'}
+                                    </button>
                                 </div>
-                            ) : (
-                                <p className="text-sm text-surface-400 italic bg-surface-50 dark:bg-surface-800 rounded-xl p-4">
-                                    No active membership
-                                </p>
-                            )}
+                            </div>
                         </div>
 
                         {/* Recent Access Logs */}
@@ -351,16 +375,25 @@ export default function UserManagement() {
                                 <ChevronRight className="w-4 h-4 text-surface-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
                             </div>
 
-                            <div className="flex items-center gap-2 mt-4">
+                            <div className="flex flex-wrap items-center gap-2 mt-4">
                                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleStyles[user.role] || roleStyles.Member}`}>
                                     {user.role}
                                 </span>
                                 {activeMembership && (
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 dark:bg-surface-700 flex items-center gap-1">
-                                        <Crown className="w-3 h-3" style={{ color: '#eab308' }} />
+                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${activeMembership.payment_status === 'PAID'
+                                            ? 'bg-success-500/10 text-success-600 dark:text-success-400'
+                                            : 'bg-warning-500/10 text-warning-600 dark:text-warning-400 line-through opacity-50'
+                                        }`}>
+                                        <Crown className="w-3 h-3" />
                                         {activeMembership.AccessTier?.name || 'Active'}
                                     </span>
                                 )}
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-tight ${user.activation_status === 'ACTIVE'
+                                        ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400'
+                                        : 'bg-surface-200 dark:bg-surface-700 text-surface-500'
+                                    }`}>
+                                    {user.activation_status || 'INACTIVE'}
+                                </span>
                             </div>
 
                             <div className="flex items-center gap-1 mt-3 text-[11px] text-surface-400">

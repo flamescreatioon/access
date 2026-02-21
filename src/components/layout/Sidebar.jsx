@@ -50,9 +50,20 @@ const adminNav = [
 
 export default function Sidebar({ collapsed, onToggle }) {
     const { user, logout } = useAuthStore();
-    const navItems = user?.role === ROLES.ADMIN ? adminNav
+    const isInactive = user?.activation_status !== 'ACTIVE';
+
+    let navItems = user?.role === ROLES.ADMIN ? adminNav
         : user?.role === ROLES.HUB_MANAGER ? hubManagerNav
             : memberNav;
+
+    // Filter or adjust nav for inactive users
+    if (isInactive) {
+        navItems = [
+            { to: '/dashboard', label: 'Setup Status', icon: Shield },
+            { to: '/onboarding/setup', label: 'Complete Setup', icon: Zap },
+            ...navItems.filter(item => ['/notifications', '/profile'].includes(item.to))
+        ];
+    }
 
     return (
         <aside className={`hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 transition-all duration-300 border-r border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900

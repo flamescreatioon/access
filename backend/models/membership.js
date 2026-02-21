@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: true
     },
     payment_method: DataTypes.STRING,
+    payment_status: {
+      type: DataTypes.STRING,
+      defaultValue: 'UNPAID'
+    },
   }, {
     sequelize,
     modelName: 'Membership',
