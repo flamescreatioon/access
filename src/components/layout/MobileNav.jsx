@@ -5,15 +5,15 @@ import { ROLES } from '../../lib/mockData';
 import {
     LayoutDashboard, CreditCard, CalendarDays, Activity, Crown,
     Users, Shield, MonitorSmartphone, UserCheck, UserPlus,
-    ScanLine, Smartphone, History,
+    ScanLine, Smartphone, History, Building, Wrench, Bell,
     MoreHorizontal, X, LogOut, User
 } from 'lucide-react';
 
 const memberNav = [
     { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
-    { to: '/access-card', label: 'Access', icon: CreditCard },
-    { to: '/bookings', label: 'Bookings', icon: CalendarDays },
-    { to: '/activity', label: 'Activity', icon: Activity },
+    { to: '/notifications', label: 'Alerts', icon: Bell },
+    { to: '/spaces', label: 'Spaces', icon: Building },
+    { to: '/equipment', label: 'Tools', icon: Wrench },
     { to: '/membership', label: 'Plan', icon: Crown },
 ];
 
@@ -27,6 +27,9 @@ const hmPrimary = [
 const hmMore = [
     { to: '/device-setup', label: 'Device Setup', icon: Smartphone },
     { to: '/logs', label: 'Logs', icon: Activity },
+    { to: '/spaces', label: 'Spaces', icon: Building },
+    { to: '/equipment', label: 'Equipment', icon: Wrench },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
     { to: '/profile', label: 'Profile', icon: User },
@@ -43,7 +46,10 @@ const adminMore = [
     { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/access-rules', label: 'Access Rules', icon: Shield },
     { to: '/devices', label: 'Devices', icon: MonitorSmartphone },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/scan-history', label: 'Scan History', icon: History },
+    { to: '/spaces', label: 'Spaces', icon: Building },
+    { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
     { to: '/profile', label: 'Profile', icon: User },

@@ -5,13 +5,16 @@ import {
     LayoutDashboard, CreditCard, CalendarDays, Activity,
     Crown, Users, Shield, MonitorSmartphone, BookOpen,
     UserCheck, UserPlus, Settings, LogOut, Zap,
-    ScanLine, Smartphone, History
+    ScanLine, Smartphone, History, Building, Wrench, Bell
 } from 'lucide-react';
 
 const memberNav = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/access-card', label: 'My Access Card', icon: CreditCard },
+    { to: '/spaces', label: 'Spaces', icon: Building },
+    { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/activity', label: 'Activity', icon: Activity },
     { to: '/membership', label: 'Membership', icon: Crown },
 ];
@@ -23,7 +26,10 @@ const hubManagerNav = [
     { to: '/device-setup', label: 'Device Setup', icon: Smartphone },
     { to: '/members', label: 'Members', icon: Users },
     { to: '/logs', label: 'Logs', icon: Activity },
+    { to: '/spaces', label: 'Spaces', icon: Building },
+    { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
 ];
 
@@ -35,7 +41,10 @@ const adminNav = [
     { to: '/access-rules', label: 'Access Rules', icon: Shield },
     { to: '/logs', label: 'Logs', icon: Activity },
     { to: '/devices', label: 'Devices', icon: MonitorSmartphone },
+    { to: '/spaces', label: 'Spaces', icon: Building },
+    { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
 ];
 

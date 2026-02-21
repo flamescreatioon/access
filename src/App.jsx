@@ -10,6 +10,11 @@ import AccessCardPage from './features/access-card/AccessCardPage';
 import MemberDashboard from './features/membership/MemberDashboard';
 import AdminMemberList from './features/membership/AdminMemberList';
 import BookingsPage from './features/bookings/BookingsPage';
+import SpacesPage from './features/spaces/SpacesPage';
+import SpaceDetail from './features/spaces/SpaceDetail';
+import EquipmentPage from './features/equipment/EquipmentPage';
+import EquipmentDetail from './features/equipment/EquipmentDetail';
+import NotificationsPage from './features/notifications/NotificationsPage';
 import LogsPage from './features/logs/LogsPage';
 import VisitorManagement from './features/visitors/VisitorManagement';
 import ProfilePage from './features/profile/ProfilePage';
@@ -41,6 +46,11 @@ function AppRoutes() {
         <Route path="/access-card" element={<AccessCardPage />} />
         <Route path="/membership" element={<MemberDashboard />} />
         <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/spaces" element={<SpacesPage />} />
+        <Route path="/spaces/:id" element={<SpaceDetail />} />
+        <Route path="/equipment" element={<EquipmentPage />} />
+        <Route path="/equipment/:id" element={<EquipmentDetail />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/activity" element={<LogsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 

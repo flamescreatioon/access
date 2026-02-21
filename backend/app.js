@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { sequelize } = require('./models');
+const equipmentRoutes = require('./routes/equipment');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -21,7 +23,10 @@ app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/access', require('./routes/access'));
 app.use('/api/v1/memberships', require('./routes/memberships'));
 app.use('/api/v1/bookings', require('./routes/bookings'));
+app.use('/api/v1/spaces', require('./routes/spaces'));
 app.use('/api/v1/users', require('./routes/users'));
+app.use('/api/v1/equipment', equipmentRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));
 

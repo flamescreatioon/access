@@ -220,8 +220,18 @@ export default function ScannerPage() {
         if (html5QrRef.current) {
             try {
                 await html5QrRef.current.stop();
-                html5QrRef.current = null;
             } catch (e) { /* ignore */ }
+            try {
+                await html5QrRef.current.clear();
+            } catch (e) { /* ignore */ }
+            html5QrRef.current = null;
+        }
+        // Remove any leftover DOM elements injected by html5-qrcode
+        // This prevents React's removeChild error
+        if (scannerRef.current) {
+            while (scannerRef.current.firstChild) {
+                scannerRef.current.removeChild(scannerRef.current.firstChild);
+            }
         }
         setScanning(false);
     }, []);

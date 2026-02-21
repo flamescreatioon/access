@@ -18,7 +18,12 @@ module.exports = (sequelize, DataTypes) => {
     user_id: DataTypes.INTEGER,
     tier_id: DataTypes.INTEGER,
     status: DataTypes.STRING,
-    expiry_date: DataTypes.DATE
+    expiry_date: DataTypes.DATE,
+    auto_renew: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    },
+    payment_method: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Membership',

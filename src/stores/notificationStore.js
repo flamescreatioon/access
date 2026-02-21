@@ -1,22 +1,44 @@
 import { create } from 'zustand';
-import { generateMockNotifications } from '../lib/mockData';
+import api from '../lib/api';
 
 export const useNotificationStore = create((set, get) => ({
-    notifications: generateMockNotifications(),
+    notifications: [],
+    loading: false,
+    error: null,
 
-    unreadCount: () => get().notifications.filter(n => !n.read).length,
+    fetchNotifications: async (unreadOnly = false) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await api.get(`/notifications?unread_only=${unreadOnly}`);
+            set({ notifications: res.data, loading: false });
+        } catch (err) {
+            set({ error: err.response?.data?.message || 'Failed to fetch notifications', loading: false });
+        }
+    },
 
-    markAsRead: (id) => set((state) => ({
-        notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n),
-    })),
+    markAsRead: async (id) => {
+        try {
+            await api.put(`/notifications/${id}/read`);
+            set((state) => ({
+                notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n),
+            }));
+        } catch (err) {
+            console.error('Failed to mark notification as read', err);
+        }
+    },
 
-    markAllRead: () => set((state) => ({
-        notifications: state.notifications.map(n => ({ ...n, read: true })),
-    })),
+    markAllRead: async () => {
+        try {
+            await api.put('/notifications/read-all');
+            set((state) => ({
+                notifications: state.notifications.map(n => ({ ...n, read: true })),
+            }));
+        } catch (err) {
+            console.error('Failed to mark all notifications as read', err);
+        }
+    },
 
-    clearAll: () => set({ notifications: [] }),
-
-    addNotification: (notification) => set((state) => ({
-        notifications: [{ ...notification, id: `n${Date.now()}`, time: new Date().toISOString(), read: false }, ...state.notifications],
-    })),
+    getUnreadCount: () => {
+        return get().notifications.filter(n => !n.read).length;
+    }
 }));

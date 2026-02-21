@@ -3,12 +3,12 @@ import { useAuthStore } from '../../stores/authStore';
 import { useMembershipStore } from '../../stores/membershipStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useLogsStore } from '../../stores/logsStore';
-import { ROLES, ANALYTICS_DATA, ROOMS } from '../../lib/mockData';
+import { useNotificationStore } from '../../stores/notificationStore';
 import {
     CreditCard, CalendarDays, Activity, Users, TrendingUp,
     Shield, QrCode, AlertTriangle, ArrowUpRight, Clock,
     CheckCircle2, XCircle, MonitorSmartphone, Bell,
-    Wifi, WifiOff, Zap, BarChart3, UserCheck, Eye
+    Wifi, WifiOff, Zap, BarChart3, UserCheck, Eye, Sparkles
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -17,78 +17,54 @@ import { Link } from 'react-router-dom';
 function StatCard({ icon: Icon, label, value, trend, color, bg, to }) {
     const content = (
         <div className={`bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50
-            hover:shadow-lg hover:shadow-${color}/5 transition-all duration-300 group cursor-pointer`}>
-            <div className="flex items-start justify-between">
-                <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center transition-transform group-hover:scale-110`}>
+            hover:shadow-lg hover:shadow-${color}/5 transition-all duration-300 group cursor-pointer relative overflow-hidden`}>
+            {trend && <div className={`absolute top-0 right-0 w-24 h-24 -mr-12 -mt-12 rounded-full opacity-5 ${bg} blur-2xl`} />}
+            <div className="flex items-start justify-between relative z-10">
+                <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
                     <Icon className={`w-5 h-5 ${color}`} />
                 </div>
                 {trend && (
-                    <span className={`flex items-center gap-0.5 text-xs font-medium px-2 py-1 rounded-full
+                    <span className={`flex items-center gap-0.5 text-[10px] font-black uppercase px-2 py-1 rounded-lg tracking-wider
                         ${trend.startsWith('+') ? 'text-success-500 bg-success-500/10' : 'text-danger-500 bg-danger-500/10'}`}>
                         <ArrowUpRight className={`w-3 h-3 ${!trend.startsWith('+') && 'rotate-90'}`} /> {trend}
                     </span>
                 )}
             </div>
-            <p className="mt-3 text-2xl font-bold tracking-tight">{value}</p>
-            <p className="text-sm text-surface-500 mt-0.5">{label}</p>
+            <p className="mt-4 text-2xl font-black tracking-tight">{value}</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-surface-400 mt-1">{label}</p>
         </div>
     );
     return to ? <Link to={to}>{content}</Link> : content;
 }
 
 /* ───────── Mini Bar Chart ───────── */
-function MiniChart({ data, color, label }) {
-    const max = Math.max(...data);
+function MiniChart({ data = [], color, label }) {
+    const max = Math.max(...(data.length ? data : [1]));
     const [animate, setAnimate] = useState(false);
     useEffect(() => { setAnimate(true); }, []);
 
     return (
         <div>
-            <div className="flex items-end gap-[3px] h-20">
-                {data.map((v, i) => (
+            <div className="flex items-end gap-[4px] h-20 px-1">
+                {(data.length ? data : [0, 0, 0, 0, 0, 0, 0]).map((v, i) => (
                     <div
                         key={i}
-                        className={`flex-1 rounded-t ${color} transition-all duration-700 ease-out hover:opacity-80`}
+                        className={`flex-1 rounded-t-sm ${color} transition-all duration-700 ease-out hover:opacity-80`}
                         style={{
                             height: animate ? `${(v / max) * 100}%` : '0%',
-                            minWidth: '6px',
-                            opacity: 0.4 + (i / data.length) * 0.6,
-                            transitionDelay: `${i * 30}ms`
+                            minHeight: '4px',
+                            minWidth: '4px',
+                            opacity: 0.3 + (i / 10) * 0.7,
+                            transitionDelay: `${i * 40}ms`
                         }}
-                        title={`${v}`}
                     />
                 ))}
             </div>
-            <div className="flex justify-between mt-2 text-[10px] text-surface-400 font-medium">
-                <span>14 days ago</span>
+            <div className="flex justify-between mt-3 text-[9px] text-surface-400 font-black uppercase tracking-widest">
+                <span>Week 1</span>
                 <span>{label}</span>
-                <span>Today</span>
+                <span>Live</span>
             </div>
-        </div>
-    );
-}
-
-/* ───────── Alert Item ───────── */
-function AlertItem({ icon: Icon, title, description, severity, time }) {
-    const severityStyles = {
-        critical: 'border-l-danger-500 bg-danger-500/5',
-        warning: 'border-l-warning-500 bg-warning-500/5',
-        info: 'border-l-primary-500 bg-primary-500/5',
-    };
-    const iconStyles = {
-        critical: 'text-danger-500',
-        warning: 'text-warning-500',
-        info: 'text-primary-500',
-    };
-
-    return (
-        <div className={`flex items-start gap-3 p-3 rounded-xl border-l-4 ${severityStyles[severity]} transition-all hover:shadow-sm`}>
-            <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${iconStyles[severity]}`} />
-            <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">{title}</p>
-                <p className="text-xs text-surface-500 mt-0.5">{description}</p>
-            </div>
-            <span className="text-[10px] text-surface-400 whitespace-nowrap">{time}</span>
         </div>
     );
 }
@@ -96,156 +72,198 @@ function AlertItem({ icon: Icon, title, description, severity, time }) {
 /* ───────── Live Activity Row ───────── */
 function LiveLogRow({ log, isAdmin }) {
     return (
-        <div className="flex items-center gap-3 py-2.5 px-1 border-b border-surface-100 dark:border-surface-800 last:border-0 hover:bg-surface-50/50 dark:hover:bg-surface-800/30 rounded-lg transition-colors">
-            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${log.success ? 'bg-success-400 shadow-sm shadow-success-400/50' : 'bg-danger-400 shadow-sm shadow-danger-400/50'}`} />
+        <div className="flex items-center gap-4 py-3.5 px-3 hover:bg-surface-50 dark:hover:bg-surface-800/50 rounded-2xl transition-all group border-b border-surface-100 dark:border-surface-700/30 last:border-0">
+            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${log.success ? 'bg-success-500 shadow-lg shadow-success-500/30' : 'bg-danger-500 shadow-lg shadow-danger-500/30'} group-hover:scale-125 transition-transform`} />
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{isAdmin ? log.memberName : log.location}</p>
-                <p className="text-[11px] text-surface-500">{log.type.replace('_', ' ')} • {log.device}</p>
+                <p className="text-sm font-black tracking-tight truncate group-hover:text-primary-500 transition-colors uppercase">{isAdmin ? log.memberName || 'Unknown' : log.location}</p>
+                <p className="text-[10px] font-bold text-surface-500 mt-0.5 opacity-70">
+                    {log.type.replace(/_/g, ' ')} • {log.device || 'System'}
+                </p>
             </div>
-            <span className="text-[10px] text-surface-400 whitespace-nowrap">
+            <span className="text-[10px] font-black text-surface-400 whitespace-nowrap bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-lg">
                 {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
             </span>
         </div>
     );
 }
 
-/* ───────── Room Occupancy Card ───────── */
-function RoomOccupancy() {
-    // Mock occupancy data
-    const roomStatus = ROOMS.slice(0, 6).map(r => ({
-        ...r,
-        occupied: Math.random() > 0.4,
-        currentUser: Math.random() > 0.5 ? 'Alex Chen' : 'Morgan Rodriguez',
-        until: new Date(Date.now() + Math.random() * 3 * 3600000).toISOString(),
-    }));
-
-    return (
-        <div className="space-y-2">
-            {roomStatus.map(room => (
-                <div key={room.id} className="flex items-center gap-3 py-2">
-                    <span className="text-lg">{room.image}</span>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{room.name}</p>
-                        <p className="text-[11px] text-surface-500">
-                            {room.occupied ? `Until ${format(new Date(room.until), 'h:mm a')}` : 'Available'}
-                        </p>
-                    </div>
-                    <span className={`w-2.5 h-2.5 rounded-full ${room.occupied ? 'bg-warning-400' : 'bg-success-400'}`} />
-                </div>
-            ))}
-        </div>
-    );
-}
-
-/* ═══════════════════════════════════════ */
-/* ───────── MAIN DASHBOARD ─────────── */
-/* ═══════════════════════════════════════ */
-
 export default function DashboardPage() {
     const { user } = useAuthStore();
-    const { currentMembership, members, fetchCurrentMembership, fetchAllMembers, isLoading: membershipLoading } = useMembershipStore();
-    const { bookings, fetchBookings, isLoading: bookingsLoading } = useBookingStore();
-    const { logs, fetchLogs, isLoading: logsLoading } = useLogsStore();
-    const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+    const { currentMembership, members, fetchCurrentMembership, fetchAllMembers } = useMembershipStore();
+    const { bookings, fetchBookings } = useBookingStore();
+    const { logs, fetchLogs } = useLogsStore();
+    const { getUnreadCount, fetchNotifications } = useNotificationStore();
+
+    const isAdmin = user?.role === 'Admin' || user?.role === 'Hub Manager';
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
-            fetchBookings();
-            fetchLogs();
-            if (isAdmin) {
-                fetchAllMembers();
-            } else {
-                fetchCurrentMembership(user.id);
-            }
-        }
-    }, [user, isAdmin, fetchCurrentMembership, fetchAllMembers, fetchBookings, fetchLogs]);
+        const load = async () => {
+            setLoading(true);
+            await Promise.all([
+                fetchBookings(),
+                fetchLogs(),
+                fetchNotifications(),
+                isAdmin ? fetchAllMembers() : fetchCurrentMembership(user.id)
+            ]);
+            setLoading(false);
+        };
+        if (user) load();
+    }, [user, isAdmin]);
 
-    const recentLogs = logs.slice(0, 8);
-    const activeMembers = members.filter(m => (m.status || '').toLowerCase() === 'active').length;
-    const expiredMembers = members.filter(m => (m.status || '').toLowerCase() === 'expired' || (m.status || '').toLowerCase() === 'inactive').length;
-    const suspendedMembers = members.filter(m => (m.status || '').toLowerCase() === 'suspended').length;
-    const upcomingBookings = bookings.filter(b => new Date(b.startTime) > new Date() && b.status !== 'cancelled');
-    const todayLogs = logs.filter(l => new Date(l.timestamp).toDateString() === new Date().toDateString());
-    const todayFailed = todayLogs.filter(l => !l.success).length;
-    const todayBookings = bookings.filter(b => new Date(b.startTime).toDateString() === new Date().toDateString());
-
-    // Mock device data
-    const devices = [
-        { name: 'Front Scanner', status: 'online', lastPing: '2m ago' },
-        { name: 'Lab Door', status: 'online', lastPing: '1m ago' },
-        { name: 'Workshop Gate', status: 'offline', lastPing: '34m ago' },
-        { name: 'Server Room', status: 'online', lastPing: '30s ago' },
-    ];
-
-    // Mock alerts
-    const alerts = [
-        { icon: WifiOff, title: 'Device Offline', description: 'Workshop Gate scanner has been offline for 34 minutes', severity: 'critical', time: '34m ago' },
-        { icon: AlertTriangle, title: 'Multiple Failed Attempts', description: '6 failed access attempts in the last hour at Main Entrance', severity: 'warning', time: '12m ago' },
-        { icon: Bell, title: 'Memberships Expiring', description: `${Math.max(1, expiredMembers)} memberships expire within the next 7 days`, severity: 'info', time: 'Today' },
-    ];
-
-    const isLoading = membershipLoading || bookingsLoading || logsLoading;
-
-    if (isLoading) {
+    if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-surface-500 animate-pulse">Loading dashboard...</p>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-[50vh] animate-pulse">
+                <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-surface-400">Synchronizing Data</p>
             </div>
         );
     }
 
-    /* ───── Member Dashboard ───── */
+    const unreadCount = getUnreadCount();
+    const upcomingBookingsCount = bookings.filter(b => b.status === 'confirmed' && new Date(b.start_time) > new Date()).length;
+    const activeMembersCount = members.filter(m => m.status === 'Active').length;
+
+    /* ───── Member UI ───── */
     if (!isAdmin) {
+        const tier = currentMembership?.AccessTier;
         return (
             <div className="space-y-6 page-enter page-enter-active">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold">
-                        Welcome back, {user?.name?.split(' ')[0]}!
-                    </h1>
-                    <p className="text-surface-500 mt-1">Here's what's happening with your access</p>
-                </div>
+                <header className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl md:text-4xl font-black tracking-tight">
+                            Hey, {user?.name?.split(' ')[0]}! <span className="inline-block animate-bounce-slow">👋</span>
+                        </h1>
+                        <p className="text-surface-500 mt-1 font-medium">Your creative hub is ready for you.</p>
+                    </div>
+                    <Link to="/notifications" className="relative p-3 bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 hover:border-primary-500/50 transition-all shadow-sm">
+                        <Bell className="w-6 h-6 text-surface-500" />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-2.5 right-2.5 w-5 h-5 bg-danger-500 text-white text-[10px] font-black border-2 border-white dark:border-surface-800 rounded-full flex items-center justify-center">
+                                {unreadCount}
+                            </span>
+                        )}
+                    </Link>
+                </header>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {currentMembership ? (
-                        <>
-                            <StatCard icon={Shield} label="Access Status" value={currentMembership.status === 'active' ? 'Active' : 'Inactive'} color="text-success-500" bg="bg-success-100 dark:bg-success-900/30" />
-                            <StatCard icon={CreditCard} label="Membership" value={currentMembership.tier.name} color="text-primary-500" bg="bg-primary-100 dark:bg-primary-900/30" />
-                            <StatCard icon={CalendarDays} label="Upcoming" value={`${upcomingBookings.length} bookings`} color="text-accent-500" bg="bg-accent-100 dark:bg-accent-900/30" to="/bookings" />
-                            <StatCard icon={Activity} label="Total Access" value={currentMembership.accessCount} trend="+5%" color="text-warning-500" bg="bg-warning-100 dark:bg-warning-900/30" to="/activity" />
-                        </>
-                    ) : (
-                        <div className="col-span-full p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-xl text-center">
-                            No active membership found. Please contact support.
-                        </div>
-                    )}
+                    <StatCard icon={Zap} label="Access Status" value={currentMembership?.status === 'Active' ? 'Active' : 'Inactive'} color="text-success-500" bg="bg-success-500/10" />
+                    <StatCard icon={Shield} label="Tier" value={tier?.name || 'Guest'} color="text-primary-500" bg="bg-primary-500/10" to="/membership" />
+                    <StatCard icon={CalendarDays} label="Upcoming" value={`${upcomingBookingsCount} active`} color="text-accent-500" bg="bg-accent-500/10" to="/bookings" />
+                    <StatCard icon={Activity} label="Logs" value={logs.length} trend="+2" color="text-warning-500" bg="bg-warning-500/10" to="/activity" />
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-6">
-                    {currentMembership && (
-                        <div className="lg:col-span-2 bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl p-6 text-white relative overflow-hidden">
-                            <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-                            <div className="absolute right-4 top-4 w-16 h-16 bg-white/10 rounded-full blur-lg" />
-                            <p className="text-sm opacity-80">Quick Access</p>
-                            <h2 className="text-xl font-bold mt-1">{currentMembership.tier.name} Member</h2>
-                            <p className="text-sm opacity-70 mt-2 flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                Expires {formatDistanceToNow(new Date(currentMembership.expiryDate), { addSuffix: true })}
-                            </p>
-                            <div className="mt-4 flex gap-3">
-                                <Link to="/access-card" className="bg-white/20 hover:bg-white/30 backdrop-blur px-4 py-2 rounded-xl text-sm font-medium transition-colors">Open Access Card</Link>
-                                <Link to="/bookings" className="bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-2 rounded-xl text-sm font-medium transition-colors">Book a Room</Link>
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Membership Hero */}
+                        {currentMembership ? (
+                            <div className="relative group overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary-600 to-primary-800 p-8 text-white shadow-2xl shadow-primary-500/20">
+                                <div className="absolute top-0 right-0 w-64 h-64 -mr-32 -mt-32 bg-white/10 rounded-full blur-3xl transition-transform group-hover:scale-110 duration-700" />
+                                <div className="absolute bottom-0 left-0 w-48 h-48 -ml-24 -mb-24 bg-accent-500/20 rounded-full blur-3xl" />
+
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center">
+                                            <Crown className="w-6 h-6 text-warning-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Current Membership</p>
+                                            <h2 className="text-2xl font-black">{tier?.name} Passport</h2>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6 mb-8">
+                                        <div>
+                                            <p className="text-xs font-bold opacity-60">Expires In</p>
+                                            <p className="text-xl font-black">{formatDistanceToNow(new Date(currentMembership.expiry_date))}</p>
+                                        </div>
+                                        <div className="w-px h-10 bg-white/10" />
+                                        <div>
+                                            <p className="text-xs font-bold opacity-60">Status</p>
+                                            <p className="text-xl font-black flex items-center gap-2">
+                                                <span className="w-2.5 h-2.5 bg-success-400 rounded-full animate-pulse" />
+                                                Active
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-4">
+                                        <Link to="/access-card" className="bg-white text-primary-600 px-8 py-3.5 rounded-2xl font-black text-sm flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-xl">
+                                            <QrCode className="w-4 h-4" /> Go Digital
+                                        </Link>
+                                        <Link to="/spaces" className="bg-white/10 backdrop-blur hover:bg-white/20 border border-white/10 px-8 py-3.5 rounded-2xl font-black text-sm transition-all text-white">
+                                            Book a Space
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-warning-500/10 border-2 border-dashed border-warning-500/30 rounded-[2.5rem] p-10 text-center">
+                                <AlertTriangle className="w-12 h-12 text-warning-500 mx-auto mb-4" />
+                                <h3 className="text-xl font-black text-surface-900 dark:text-surface-100">Membership Required</h3>
+                                <p className="text-surface-500 mt-2 font-medium">Purchase a plan to start accessing the Hub and booking equipment.</p>
+                                <Link to="/membership" className="mt-6 inline-block bg-primary-500 text-white px-8 py-3 rounded-2xl font-black text-sm">View Plans</Link>
+                            </div>
+                        )}
+
+                        {/* Recent Activity Mini */}
+                        <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50 shadow-sm">
+                            <h2 className="font-black text-lg mb-4 flex items-center gap-2 uppercase tracking-tight">
+                                <Activity className="w-5 h-5 text-accent-500" /> Recent Entry Logs
+                            </h2>
+                            <div className="space-y-0.5">
+                                {logs.length > 0 ? logs.slice(0, 5).map(log => (
+                                    <LiveLogRow key={log.id} log={log} isAdmin={false} />
+                                )) : <p className="text-center py-12 text-surface-400 italic">No activity recorded yet.</p>}
+                                {logs.length > 0 && (
+                                    <Link to="/activity" className="block text-center pt-4 text-[10px] font-black uppercase text-primary-500 hover:underline tracking-widest">
+                                        Show all access logs
+                                    </Link>
+                                )}
                             </div>
                         </div>
-                    )}
-                    <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                        <h2 className="font-semibold mb-3 flex items-center gap-2"><Activity className="w-5 h-5 text-accent-500" /> Recent Activity</h2>
-                        <div className="space-y-1">
-                            {recentLogs.length > 0 ? recentLogs.slice(0, 5).map(log => (
-                                <LiveLogRow key={log.id} log={log} isAdmin={false} />
-                            )) : <p className="text-sm text-surface-500">No recent activity</p>}
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* Usage Stats Panel */}
+                        <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50 shadow-sm">
+                            <h3 className="font-black text-sm mb-6 flex items-center gap-2 uppercase tracking-widest text-surface-400">
+                                <Sparkles className="w-4 h-4 text-primary-500" /> Monthly Impact
+                            </h3>
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="flex justify-between text-xs font-black uppercase mb-2">
+                                        <span>Space Utilization</span>
+                                        <span className="text-primary-500">75%</span>
+                                    </div>
+                                    <div className="h-3 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden p-0.5">
+                                        <div className="h-full bg-primary-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" style={{ width: '75%' }} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-surface-100 dark:border-surface-700/50">
+                                    <div>
+                                        <p className="text-xs font-bold text-surface-400 lowercase">Hours Logged</p>
+                                        <p className="text-xl font-black">24.5</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-surface-400 lowercase">Equipment Used</p>
+                                        <p className="text-xl font-black">6 types</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Quick Tips */}
+                        <div className="bg-accent-500/5 border border-accent-500/10 rounded-[2rem] p-6">
+                            <h4 className="font-bold text-accent-600 dark:text-accent-400 flex items-center gap-2 mb-2">
+                                <Info className="w-4 h-4" /> Did you know?
+                            </h4>
+                            <p className="text-xs text-accent-700/80 dark:text-accent-300/80 leading-relaxed font-medium">
+                                You can book the 3D printers up to 48 hours in advance. Make sure to complete your safety module first!
+                            </p>
+                            <Link to="/equipment" className="mt-4 inline-flex items-center gap-1 text-[10px] font-black uppercase text-accent-500">
+                                Browse Equipment →
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -253,156 +271,119 @@ export default function DashboardPage() {
         );
     }
 
-    /* ───── Admin Dashboard ───── */
+    /* ───── Admin UI ───── */
     return (
         <div className="space-y-6 page-enter page-enter-active">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-                            <Zap className="w-5 h-5 text-white" />
+                    <h1 className="text-3xl font-black tracking-tight flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-400 flex items-center justify-center shadow-lg shadow-primary-500/20">
+                            <MonitorSmartphone className="w-6 h-6 text-white" />
                         </div>
-                        Control Center
+                        Hub Command
                     </h1>
-                    <p className="text-surface-500 mt-1">Real-time overview of hub operations</p>
+                    <p className="text-surface-500 mt-1 font-medium">Real-time hub operations and member analytics.</p>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-surface-400">
-                    <div className="w-2 h-2 bg-success-400 rounded-full animate-pulse" />
-                    <span>Live • Updated {format(new Date(), 'h:mm a')}</span>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-success-500/10 text-success-600 dark:text-success-400 rounded-xl border border-success-500/20 text-[10px] font-black uppercase tracking-wider">
+                        <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
+                        Network Live
+                    </div>
+                    <Link to="/notifications" className="relative p-2.5 bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 text-surface-500">
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-danger-500 rounded-full border-2 border-white dark:border-surface-800" />}
+                    </Link>
                 </div>
-            </div>
+            </header>
 
-            {/* ── Quick Metrics Row ── */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <StatCard icon={Users} label="Active Members" value={activeMembers} trend="+12%" color="text-primary-500" bg="bg-primary-100 dark:bg-primary-900/30" to="/members" />
-                <StatCard icon={UserCheck} label="Expired" value={expiredMembers} color="text-warning-500" bg="bg-warning-100 dark:bg-warning-900/30" to="/members" />
-                <StatCard icon={Shield} label="Suspended" value={suspendedMembers} color="text-danger-500" bg="bg-danger-100 dark:bg-danger-900/30" to="/members" />
-                <StatCard icon={QrCode} label="Today's Scans" value={todayLogs.length || ANALYTICS_DATA.qrScansPerDay.at(-1)} trend="+8%" color="text-accent-500" bg="bg-accent-100 dark:bg-accent-900/30" to="/logs" />
-                <StatCard icon={AlertTriangle} label="Failed Today" value={todayFailed || ANALYTICS_DATA.failedAttempts.at(-1)} color="text-danger-500" bg="bg-danger-100 dark:bg-danger-900/30" to="/logs" />
-                <StatCard icon={CalendarDays} label="Bookings Today" value={todayBookings.length || ANALYTICS_DATA.bookingFrequency.at(-1)} trend="+15%" color="text-success-500" bg="bg-success-100 dark:bg-success-900/30" to="/bookings" />
+                <StatCard icon={Users} label="Total Members" value={activeMembersCount} trend="+4%" color="text-primary-500" bg="bg-primary-500/10" to="/members" />
+                <StatCard icon={CheckCircle2} label="Active Today" value={logs.length} trend="+12" color="text-success-500" bg="bg-success-500/10" to="/logs" />
+                <StatCard icon={CalendarDays} label="Bookings" value={bookings.length} trend="+8" color="text-warning-500" bg="bg-warning-500/10" to="/bookings" />
+                <StatCard icon={AlertTriangle} label="Security Fail" value={logs.filter(l => !l.success).length} color="text-danger-500" bg="bg-danger-500/10" to="/logs" />
+                <StatCard icon={TrendingUp} label="Daily Load" value="84%" trend="+3%" color="text-accent-500" bg="bg-accent-500/10" />
+                <StatCard icon={Zap} label="Upgrades" value="12" color="text-primary-400" bg="bg-primary-400/10" />
             </div>
 
-            {/* ── Main Content Grid ── */}
             <div className="grid lg:grid-cols-3 gap-6">
-
-                {/* Left: Activity Feed (2 cols) */}
                 <div className="lg:col-span-2 space-y-6">
-
-                    {/* Charts Row */}
                     <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold flex items-center gap-2 text-sm">
-                                    <TrendingUp className="w-4 h-4 text-primary-500" /> Daily Active Users
-                                </h3>
-                                <span className="text-xs text-surface-400">{ANALYTICS_DATA.dailyActiveUsers.at(-1)} today</span>
-                            </div>
-                            <MiniChart data={ANALYTICS_DATA.dailyActiveUsers} color="bg-primary-500" label="DAU" />
+                        <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50">
+                            <h3 className="font-black text-[10px] uppercase tracking-widest text-surface-400 mb-6 flex items-center border-b border-surface-100 dark:border-surface-700 pb-2">
+                                <TrendingUp className="w-3.5 h-3.5 mr-2 text-primary-500" /> Member Growth (14d)
+                            </h3>
+                            <MiniChart data={[12, 19, 15, 22, 28, 25, 34, 42, 38, 45, 52, 48, 55, 62]} color="bg-primary-500" label="Members" />
                         </div>
-                        <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold flex items-center gap-2 text-sm">
-                                    <QrCode className="w-4 h-4 text-accent-500" /> QR Scans
-                                </h3>
-                                <span className="text-xs text-surface-400">{ANALYTICS_DATA.qrScansPerDay.at(-1)} today</span>
-                            </div>
-                            <MiniChart data={ANALYTICS_DATA.qrScansPerDay} color="bg-accent-500" label="Scans" />
+                        <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50">
+                            <h3 className="font-black text-[10px] uppercase tracking-widest text-surface-400 mb-6 flex items-center border-b border-surface-100 dark:border-surface-700 pb-2">
+                                <QrCode className="w-3.5 h-3.5 mr-2 text-accent-500" /> Entries (24h)
+                            </h3>
+                            <MiniChart data={[8, 4, 2, 1, 0, 5, 12, 24, 38, 42, 35, 28, 44, 48]} color="bg-accent-500" label="Scans" />
                         </div>
                     </div>
 
-                    {/* Live Access Feed */}
-                    <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-accent-500" />
-                                Live Activity Feed
+                    <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50 shadow-sm overflow-hidden">
+                        <div className="flex items-center justify-between mb-6 px-2">
+                            <h2 className="font-black text-xl tracking-tight uppercase flex items-center gap-3">
+                                <Activity className="w-6 h-6 text-accent-500" />
+                                Real-time Entry Stream
                             </h2>
-                            <Link to="/logs" className="text-xs text-primary-500 hover:text-primary-400 font-medium flex items-center gap-1">
-                                View All <Eye className="w-3 h-3" />
+                            <Link to="/logs" className="p-2.5 bg-surface-100 dark:bg-surface-800 rounded-xl hover:text-primary-500 transition-colors">
+                                <Eye className="w-5 h-5" />
                             </Link>
                         </div>
-                        <div className="space-y-0.5 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin">
-                            {recentLogs.length > 0 ? recentLogs.map(log => (
+                        <div className="space-y-0.5 max-h-[400px] overflow-y-auto no-scrollbar">
+                            {logs.length > 0 ? logs.slice(0, 10).map(log => (
                                 <LiveLogRow key={log.id} log={log} isAdmin={true} />
-                            )) : <p className="text-sm text-surface-500 py-4 text-center">No recent activity</p>}
-                        </div>
-                    </div>
-
-                    {/* More Charts */}
-                    <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                            <h3 className="text-xs font-medium text-surface-500 uppercase tracking-wider mb-3">Booking Frequency</h3>
-                            <MiniChart data={ANALYTICS_DATA.bookingFrequency} color="bg-success-500" label="Bookings" />
-                        </div>
-                        <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                            <h3 className="text-xs font-medium text-surface-500 uppercase tracking-wider mb-3">Failed Attempts</h3>
-                            <MiniChart data={ANALYTICS_DATA.failedAttempts} color="bg-danger-500" label="Failures" />
-                        </div>
-                        <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                            <h3 className="text-xs font-medium text-surface-500 uppercase tracking-wider mb-3">Membership Upgrades</h3>
-                            <MiniChart data={ANALYTICS_DATA.membershipUpgrades} color="bg-warning-500" label="Upgrades" />
+                            )) : <p className="text-center py-24 text-surface-400 animate-pulse">Waiting for network signals...</p>}
                         </div>
                     </div>
                 </div>
 
-                {/* Right Sidebar */}
                 <div className="space-y-6">
-
-                    {/* Alerts Panel */}
-                    <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                        <h2 className="font-semibold flex items-center gap-2 mb-4">
-                            <AlertTriangle className="w-5 h-5 text-warning-500" />
-                            Alerts
-                            <span className="ml-auto text-xs bg-danger-500 text-white px-2 py-0.5 rounded-full">{alerts.length}</span>
+                    <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50 shadow-sm">
+                        <h2 className="font-black text-[10px] uppercase tracking-[0.2em] text-surface-400 mb-6 border-b border-surface-100 dark:border-surface-700 pb-2 flex items-center">
+                            <AlertTriangle className="w-4 h-4 mr-2 text-warning-500" /> Network Alerts
                         </h2>
                         <div className="space-y-2">
-                            {alerts.map((alert, i) => (
-                                <AlertItem key={i} {...alert} />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Device Status */}
-                    <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold flex items-center gap-2">
-                                <MonitorSmartphone className="w-5 h-5 text-primary-500" />
-                                Devices
-                            </h2>
-                            <Link to="/devices" className="text-xs text-primary-500 hover:text-primary-400 font-medium">
-                                Manage →
-                            </Link>
-                        </div>
-                        <div className="space-y-3">
-                            {devices.map((d, i) => (
-                                <div key={i} className="flex items-center gap-3">
-                                    {d.status === 'online'
-                                        ? <Wifi className="w-4 h-4 text-success-500" />
-                                        : <WifiOff className="w-4 h-4 text-danger-500" />
-                                    }
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{d.name}</p>
-                                        <p className="text-[11px] text-surface-500">Last ping: {d.lastPing}</p>
-                                    </div>
-                                    <span className={`w-2 h-2 rounded-full ${d.status === 'online' ? 'bg-success-400' : 'bg-danger-400 animate-pulse'}`} />
+                            <div className="flex items-start gap-4 p-4 bg-danger-500/5 border-l-4 border-l-danger-500 rounded-2xl">
+                                <WifiOff className="w-5 h-5 text-danger-500 mt-1" />
+                                <div>
+                                    <p className="text-sm font-black uppercase text-danger-600">Lab Gate Offline</p>
+                                    <p className="text-[10px] font-bold text-surface-500 mt-0.5">Disconnected 12m ago</p>
                                 </div>
-                            ))}
+                            </div>
+                            <div className="flex items-start gap-4 p-4 bg-warning-500/5 border-l-4 border-l-warning-500 rounded-2xl">
+                                <AlertCircle className="w-5 h-5 text-warning-500 mt-1" />
+                                <div>
+                                    <p className="text-sm font-black uppercase text-warning-600">Multiple Auth Failure</p>
+                                    <p className="text-[10px] font-bold text-surface-500 mt-0.5">8 failed attempts at Main Entrance</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Room Occupancy */}
-                    <div className="bg-white dark:bg-surface-800/50 rounded-2xl p-5 border border-surface-200 dark:border-surface-700/50">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5 text-accent-500" />
-                                Room Status
-                            </h2>
-                            <Link to="/bookings" className="text-xs text-primary-500 hover:text-primary-400 font-medium">
-                                Bookings →
-                            </Link>
+                    <div className="bg-gradient-to-br from-surface-800 to-surface-900 rounded-[2.5rem] p-8 text-white shadow-2xl">
+                        <h3 className="text-xl font-black mb-1">Capacity Monitor</h3>
+                        <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-6 border-b border-white/10 pb-2">Main Hall</p>
+
+                        <div className="relative pt-10 pb-6 text-center">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-[10px] border-white/5" />
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-[10px] border-success-500 border-t-transparent -rotate-45" />
+                            <p className="text-4xl font-black">68<span className="text-lg text-white/40">%</span></p>
+                            <p className="text-[10px] font-bold text-white/50 uppercase mt-1 tracking-widest">Normal Load</p>
                         </div>
-                        <RoomOccupancy />
+
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="p-3 bg-white/5 rounded-2xl">
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest leading-none mb-1">In Hub</p>
+                                <p className="text-lg font-black leading-none">142</p>
+                            </div>
+                            <div className="p-3 bg-white/5 rounded-2xl">
+                                <p className="text-white/40 text-[9px] font-black uppercase tracking-widest leading-none mb-1">Available</p>
+                                <p className="text-lg font-black leading-none">58</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

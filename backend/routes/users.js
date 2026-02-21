@@ -1,10 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const { authenticate, authorizeRole } = require('../middleware/auth');
 
-// All user routes require Admin or Hub Manager
-router.use(authenticateToken);
+// Personal user endpoints (require authentication)
+router.get('/profile', authenticate, userController.getProfile);
+router.get('/sessions', authenticate, userController.getSessions);
+router.delete('/sessions/:id', authenticate, userController.revokeSession);
+router.get('/audit-logs', authenticate, userController.getAuditLogs);
+router.put('/settings', authenticate, userController.updateSettings);
+
+// Admin / Hub Manager restriction for general user management
+router.use(authenticate);
 router.use(authorizeRole(['Admin', 'Hub Manager']));
 
 router.get('/', userController.getAllUsers);

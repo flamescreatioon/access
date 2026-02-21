@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import api from '../lib/api';
-import { MEMBERSHIP_TIERS } from '../lib/mockData';
 
 export const useMembershipStore = create((set, get) => ({
-    members: [], // For admin view
-    tiers: MEMBERSHIP_TIERS,
+    members: [],
     currentMembership: null,
+    history: [],
     isLoading: false,
     error: null,
 
@@ -13,25 +12,39 @@ export const useMembershipStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const response = await api.get(`/memberships/user/${userId}`);
-            // Map backend response to store format
-            const backendData = response.data;
-            const tier = MEMBERSHIP_TIERS.find(t => t.name === backendData.AccessTier.name) || MEMBERSHIP_TIERS[0];
-
-            const membership = {
-                tier: tier,
-                status: backendData.status.toLowerCase(),
-                expiryDate: backendData.expiry_date,
-                joinDate: backendData.createdAt,
-                paymentStatus: 'paid', // Mock for now
-                privileges: JSON.parse(backendData.AccessTier.permissions || '[]'),
-                accessCount: 0, // Need to fetch from logs?
-                nextPayment: backendData.expiry_date,
-            };
-            set({ currentMembership: membership, isLoading: false });
+            set({ currentMembership: response.data, isLoading: false });
         } catch (error) {
             console.error('Error fetching membership:', error);
-            // Fallback for demo if no membership found
             set({ currentMembership: null, isLoading: false, error: 'No active membership' });
+        }
+    },
+
+    fetchHistory: async () => {
+        try {
+            const response = await api.get('/memberships/history');
+            set({ history: response.data });
+        } catch (error) {
+            console.error('Error fetching history:', error);
+        }
+    },
+
+    toggleAutoRenew: async () => {
+        try {
+            const response = await api.put('/memberships/auto-renew');
+            set({ currentMembership: response.data });
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Update failed' };
+        }
+    },
+
+    requestUpgrade: async (tierId) => {
+        try {
+            const response = await api.post('/memberships/upgrade', { target_tier_id: tierId });
+            set({ currentMembership: response.data.membership });
+            return { success: true, message: response.data.message };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Upgrade failed' };
         }
     },
 
@@ -39,24 +52,12 @@ export const useMembershipStore = create((set, get) => ({
     fetchAllMembers: async () => {
         set({ isLoading: true });
         try {
-            const response = await api.get('/memberships'); // Need to implement this
+            const response = await api.get('/memberships');
             set({ members: response.data, isLoading: false });
         } catch (error) {
             set({ error: error.message, isLoading: false });
         }
     },
-
-    suspendMember: (id) => set((state) => ({
-        members: state.members.map(m => m.id === id ? { ...m, status: 'suspended' } : m),
-    })),
-
-    reactivateMember: (id) => set((state) => ({
-        members: state.members.map(m => m.id === id ? { ...m, status: 'active' } : m),
-    })),
-
-    updateMemberTier: (id, tierId) => set((state) => ({
-        members: state.members.map(m => m.id === id ? { ...m, tier: MEMBERSHIP_TIERS.find(t => t.id === tierId) || m.tier } : m),
-    })),
 
     getFilteredMembers: (search, statusFilter) => {
         let results = get().members;

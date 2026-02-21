@@ -1,15 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const membershipController = require('../controllers/membershipController');
-const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const { authenticate, authorizeRole } = require('../middleware/auth');
 
-// Create Membership (Admin Only)
-router.post('/', authenticateToken, authorizeRole(['Admin']), membershipController.createMembership);
+// All membership routes require authentication
+router.use(authenticate);
 
-// Get All Memberships (Admin Only)
-router.get('/', authenticateToken, authorizeRole(['Admin']), membershipController.getAllMemberships);
+// Public (Member) Routes
+router.get('/user/:userId', membershipController.getUserMembership);
+router.get('/history', membershipController.getMembershipHistory);
+router.put('/auto-renew', membershipController.toggleAutoRenew);
+router.post('/upgrade', membershipController.requestUpgrade);
 
-// Get User Membership
-router.get('/user/:userId', authenticateToken, membershipController.getUserMembership);
+// Admin Only Routes
+router.post('/', authorizeRole(['Admin']), membershipController.createMembership);
+router.get('/', authorizeRole(['Admin']), membershipController.getAllMemberships);
 
 module.exports = router;

@@ -1,5 +1,80 @@
-const { User, Membership, AccessTier, AccessLog } = require('../models');
+const { User, Membership, AccessTier, AccessLog, RefreshToken, AuditLog, UserCertification } = require('../models');
 const bcrypt = require('bcrypt');
+
+// GET /api/v1/users/profile — Get current user profile
+exports.getProfile = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id, {
+            attributes: { exclude: ['password_hash'] },
+            include: [
+                { model: Membership, include: [AccessTier] },
+                { model: UserCertification }
+            ]
+        });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching profile' });
+    }
+};
+
+// GET /api/v1/users/sessions — Get active sessions
+exports.getSessions = async (req, res) => {
+    try {
+        const sessions = await RefreshToken.findAll({
+            where: { user_id: req.user.id },
+            order: [['last_used_at', 'DESC']]
+        });
+        res.json(sessions);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching sessions' });
+    }
+};
+
+// DELETE /api/v1/users/sessions/:id — Revoke a session
+exports.revokeSession = async (req, res) => {
+    try {
+        const session = await RefreshToken.findOne({
+            where: { id: req.params.id, user_id: req.user.id }
+        });
+        if (!session) return res.status(404).json({ message: 'Session not found' });
+
+        await session.destroy();
+        res.json({ message: 'Session revoked' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error revoking session' });
+    }
+};
+
+// GET /api/v1/users/audit-logs — Get personal activity logs
+exports.getAuditLogs = async (req, res) => {
+    try {
+        const logs = await AuditLog.findAll({
+            where: { user_id: req.user.id },
+            limit: 50,
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching audit logs' });
+    }
+};
+
+// PUT /api/v1/users/settings — Update user preferences
+exports.updateSettings = async (req, res) => {
+    try {
+        const { settings } = req.body;
+        const user = await User.findByPk(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Merge or replace settings
+        const newSettings = { ...user.settings, ...settings };
+        await user.update({ settings: newSettings });
+
+        res.json({ message: 'Settings updated', settings: user.settings });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating settings' });
+    }
+};
 
 // GET /api/v1/users — Admin: list all users
 exports.getAllUsers = async (req, res) => {

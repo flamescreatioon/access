@@ -62,3 +62,64 @@ exports.getAllMemberships = async (req, res) => {
         res.status(500).json({ message: 'Error fetching memberships', error: error.message });
     }
 };
+
+// PUT /api/v1/membership/auto-renew — Toggle auto-renew
+exports.toggleAutoRenew = async (req, res) => {
+    try {
+        const membership = await Membership.findOne({
+            where: { user_id: req.user.id, status: 'Active' }
+        });
+
+        if (!membership) return res.status(404).json({ message: 'No active membership' });
+
+        await membership.update({ auto_renew: !membership.auto_renew });
+        res.json(membership);
+    } catch (error) {
+        res.status(500).json({ message: 'Error toggling auto-renew', error: error.message });
+    }
+};
+
+// POST /api/v1/membership/upgrade — Request a tier upgrade
+exports.requestUpgrade = async (req, res) => {
+    try {
+        const { target_tier_id } = req.body;
+        const user_id = req.user.id;
+
+        const tier = await AccessTier.findByPk(target_tier_id);
+        if (!tier) return res.status(404).json({ message: 'Target tier not found' });
+
+        // In a real system, this would trigger a payment or admin approval.
+        // For this Hub Access System, we'll simulate an immediate upgrade.
+
+        await Membership.update({ status: 'Inactive' }, { where: { user_id, status: 'Active' } });
+
+        const expiry = new Date();
+        expiry.setFullYear(expiry.getFullYear() + 1);
+
+        const newMembership = await Membership.create({
+            user_id,
+            tier_id: target_tier_id,
+            status: 'Active',
+            expiry_date: expiry,
+            auto_renew: true
+        });
+
+        res.json({ message: `Successfully upgraded to ${tier.name}`, membership: newMembership });
+    } catch (error) {
+        res.status(500).json({ message: 'Error processing upgrade', error: error.message });
+    }
+};
+
+// GET /api/v1/membership/history — Get user membership history
+exports.getMembershipHistory = async (req, res) => {
+    try {
+        const history = await Membership.findAll({
+            where: { user_id: req.user.id },
+            include: [AccessTier],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(history);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching history', error: error.message });
+    }
+};
