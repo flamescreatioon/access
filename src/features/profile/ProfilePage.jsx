@@ -9,6 +9,7 @@ import {
     CreditCard, Zap, ShieldAlert, History, Activity, Monitor, Trash2
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import NotificationSettings from './NotificationSettings';
 import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -21,7 +22,7 @@ export default function ProfilePage() {
 
     const [certifications, setCertifications] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('identity'); // identity, security, activity
+    const [activeTab, setActiveTab] = useState('identity'); // identity, notifications, security, activity
 
     // Password change state
     const [passwordData, setPasswordData] = useState({ current: '', next: '', confirm: '' });
@@ -98,6 +99,7 @@ export default function ProfilePage() {
                 <div className="flex bg-surface-100 dark:bg-surface-800/50 p-1.5 rounded-[1.5rem] border border-surface-200 dark:border-surface-700/50">
                     {[
                         { id: 'identity', label: 'Identity', icon: User },
+                        { id: 'notifications', label: 'Alerts', icon: Bell },
                         { id: 'security', label: 'Security', icon: Shield },
                         { id: 'activity', label: 'Activity', icon: Activity }
                     ].map(tab => (
@@ -166,7 +168,7 @@ export default function ProfilePage() {
                                 </div>
                                 <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-900/50 border border-surface-100 dark:border-surface-800">
                                     <p className="text-[10px] font-black text-surface-400 uppercase tracking-widest mb-1">Hub Since</p>
-                                    <span className="text-sm font-black">{format(new Date(user.createdAt), 'MMMM yyyy')}</span>
+                                    <p className="text-surface-500 text-xs">Member since {user.createdAt ? format(new Date(user.createdAt), 'MMMM yyyy') : 'Loading...'}</p>
                                 </div>
                             </div>
                         </div>
@@ -231,41 +233,21 @@ export default function ProfilePage() {
                                 )}
                             </div>
 
-                            {/* Notifications / Preferences */}
-                            <div className="bg-white dark:bg-surface-800/50 rounded-[3rem] p-10 border border-surface-200 dark:border-surface-700/50">
-                                <h3 className="font-black text-xl mb-8 flex items-center gap-3">
-                                    <Bell className="w-6 h-6 text-warning-500" /> Notification Preferences
-                                </h3>
-                                <div className="grid md:grid-cols-2 gap-8">
-                                    {[
-                                        { id: 'push', icon: Smartphone, label: 'Real-time Push', desc: 'Alerts directly to your device.' },
-                                        { id: 'email', icon: Mail, label: 'Digest Emails', desc: 'Summary of bookings and invoices.' },
-                                        { id: 'marketing', icon: Zap, label: 'Community Hub', desc: 'Workshops, events, and news.' },
-                                    ].map((pref) => {
-                                        const active = user.settings?.notifications?.[pref.id] ?? false;
-                                        return (
-                                            <div key={pref.id} className="flex items-center justify-between p-4 rounded-3xl bg-surface-50 dark:bg-surface-900/30 border border-surface-100 dark:border-surface-800">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${active ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/20' : 'bg-surface-200 dark:bg-surface-800 text-surface-400'}`}>
-                                                        <pref.icon className="w-6 h-6" />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-black text-sm tracking-tight">{pref.label}</h4>
-                                                        <p className="text-[10px] font-bold text-surface-400 uppercase tracking-widest">{pref.desc}</p>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => toggleSetting('notifications', pref.id, !active)}
-                                                    className={`w-14 h-7 rounded-full relative transition-all duration-300 ${active ? 'bg-primary-500' : 'bg-surface-200 dark:bg-surface-700'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${active ? 'right-1' : 'left-1'}`} />
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
+                            {/* Status Section */}
+                            <div className="mt-8 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-2xl border border-primary-100 dark:border-primary-900/20 flex items-center justify-between">
+                                <div>
+                                    <h4 className="text-sm font-bold text-primary-900 dark:text-primary-100">Profile Status</h4>
+                                    <p className="text-xs text-primary-700 dark:text-primary-300">Your profile is {user.profile_complete ? 'fully verified' : 'partially complete'}.</p>
+                                </div>
+                                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${user.profile_complete ? 'bg-success-500 text-white' : 'bg-warning-500 text-white'}`}>
+                                    {user.profile_complete ? 'Verified' : 'Pending'}
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {activeTab === 'notifications' && (
+                        <NotificationSettings />
                     )}
 
                     {activeTab === 'security' && (

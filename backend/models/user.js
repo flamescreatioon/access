@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
       User.hasMany(models.Device, { foreignKey: 'user_id', onDelete: 'CASCADE' });
       User.hasMany(models.Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.PushSubscription, { foreignKey: 'user_id', onDelete: 'CASCADE' });
     }
   }
   User.init({
@@ -63,6 +64,13 @@ module.exports = (sequelize, DataTypes) => {
         notifications: {
           push: true,
           email: true,
+          types: {
+            booking: true,
+            access: true,
+            security: true,
+            system: true,
+            membership: true
+          },
           marketing: false
         },
         theme: 'dark'

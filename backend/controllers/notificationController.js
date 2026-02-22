@@ -1,5 +1,19 @@
-const { Notification, Sequelize } = require('../models');
+const { Notification, PushSubscription, User, Sequelize } = require('../models');
 const { Op } = Sequelize;
+const webpush = require('web-push');
+
+// Set VAPID keys for the helper
+if (process.env.VAPID_PUBLIC_KEY) {
+    try {
+        webpush.setVapidDetails(
+            'mailto:admin@hub.com',
+            process.env.VAPID_PUBLIC_KEY,
+            process.env.VAPID_PRIVATE_KEY
+        );
+    } catch (err) {
+        console.error('VAPID Initialization Error:', err.message);
+    }
+}
 
 // GET /api/v1/notifications — Get user notifications
 exports.getUserNotifications = async (req, res) => {
@@ -54,7 +68,17 @@ exports.markAllRead = async (req, res) => {
 // Helper function (Internal use only)
 exports.createNotification = async ({ user_id, title, body, type, data, channel }) => {
     try {
-        return await Notification.create({
+        const user = await User.findByPk(user_id);
+        if (!user) return null;
+
+        const settings = user.settings || {};
+        const notificationSettings = settings.notifications || { push: true, types: {} };
+
+        // Check if user has disabled this notification type
+        const typeEnabled = notificationSettings.types?.[type] !== false;
+        if (!typeEnabled) return null;
+
+        const notification = await Notification.create({
             user_id,
             title,
             body,
@@ -62,6 +86,37 @@ exports.createNotification = async ({ user_id, title, body, type, data, channel 
             data,
             channel: channel || 'in_app'
         });
+
+        // Send Push Notification if enabled and subscription exists
+        if (notificationSettings.push !== false) {
+            const subscriptions = await PushSubscription.findAll({ where: { user_id } });
+
+            if (subscriptions.length > 0) {
+                const payload = JSON.stringify({
+                    title,
+                    body,
+                    icon: '/icon-192.png',
+                    data: {
+                        url: data?.url || '/notifications',
+                        notification_id: notification.id
+                    }
+                });
+
+                await Promise.allSettled(subscriptions.map(sub => {
+                    return webpush.sendNotification({
+                        endpoint: sub.endpoint,
+                        keys: { p256dh: sub.p256dh, auth: sub.auth }
+                    }, payload).catch(err => {
+                        if (err.statusCode === 410 || err.statusCode === 404) {
+                            // Subscription has expired or is no longer valid
+                            return sub.destroy();
+                        }
+                    });
+                }));
+            }
+        }
+
+        return notification;
     } catch (error) {
         console.error('Failed to create notification:', error);
     }

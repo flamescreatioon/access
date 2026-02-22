@@ -15,4 +15,8 @@ router.get('/:id', bookingController.getBookingById);
 router.put('/:id', bookingController.modifyBooking);
 router.delete('/:id', bookingController.cancelBooking);
 
+// Admin routes
+router.get('/admin/all', authorizeRole('Admin', 'Hub Manager'), bookingController.getAllBookings);
+router.patch('/admin/:id/status', authorizeRole('Admin', 'Hub Manager'), bookingController.updateBookingStatus);
+
 module.exports = router;

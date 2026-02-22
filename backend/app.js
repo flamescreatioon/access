@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const { sequelize } = require('./models');
 const equipmentRoutes = require('./routes/equipment');
 const notificationRoutes = require('./routes/notifications');
+const pushRoutes = require('./routes/push');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/equipment', equipmentRoutes);
 app.use('/api/v1/equipment-categories', require('./routes/equipmentCategories'));
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/push', pushRoutes);
 app.use('/api/v1/onboarding', require('./routes/onboarding'));
 app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));

@@ -4,6 +4,7 @@ const equipmentController = require('../controllers/equipmentController');
 const { authenticate, authorizeRole } = require('../middleware/auth');
 
 // Member Routes
+router.get('/certifications', authenticate, equipmentController.getUserCertifications);
 router.get('/', authenticate, equipmentController.getAllEquipment);
 router.get('/:id', authenticate, equipmentController.getEquipmentById);
 router.get('/:id/availability', authenticate, equipmentController.getEquipmentAvailability);

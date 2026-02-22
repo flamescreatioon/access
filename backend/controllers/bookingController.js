@@ -284,3 +284,68 @@ exports.cancelBooking = async (req, res) => {
         res.status(500).json({ message: 'Error cancelling booking', error: error.message });
     }
 };
+
+// Admin: GET /api/v1/bookings/admin/all — Get all bookings for all users
+exports.getAllBookings = async (req, res) => {
+    try {
+        const { status, type } = req.query;
+        const where = {};
+
+        if (status) where.status = status;
+        if (type) where.type = type;
+
+        const bookings = await Booking.findAll({
+            where,
+            include: [
+                { model: User, attributes: ['id', 'name', 'email'] },
+                { model: Space, attributes: ['id', 'name', 'type', 'location'] },
+                { model: Equipment, attributes: ['id', 'name', 'location'] },
+            ],
+            order: [['start_time', 'DESC']],
+        });
+
+        res.json(bookings);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching all bookings', error: error.message });
+    }
+};
+
+// Admin: PATCH /api/v1/bookings/admin/:id/status — Update any booking status
+exports.updateBookingStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, reason } = req.body;
+
+        const booking = await Booking.findByPk(id, {
+            include: [
+                { model: User, attributes: ['id', 'name', 'email'] },
+                { model: Space },
+                { model: Equipment }
+            ]
+        });
+
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+        const oldStatus = booking.status;
+        await booking.update({
+            status,
+            cancel_reason: status === 'cancelled' ? (reason || 'Admin action') : booking.cancel_reason
+        });
+
+        // Notify user of status change
+        const notificationController = require('./notificationController');
+        const resourceName = booking.Space?.name || booking.Equipment?.name || 'Resource';
+
+        await notificationController.createNotification({
+            user_id: booking.user_id,
+            title: `Booking ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+            body: `Your booking for ${resourceName} on ${format(new Date(booking.start_time), 'MMM d')} has been ${status}.`,
+            type: 'booking',
+            data: { booking_id: booking.id }
+        });
+
+        res.json(booking);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating booking status', error: error.message });
+    }
+};

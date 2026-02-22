@@ -4,6 +4,7 @@ import api from '../lib/api';
 export const useBookingStore = create((set, get) => ({
     bookings: [],
     upcomingBookings: [],
+    adminBookings: [],
     isLoading: false,
     error: null,
 
@@ -17,6 +18,19 @@ export const useBookingStore = create((set, get) => ({
             set({ bookings: res.data, isLoading: false });
         } catch (error) {
             set({ error: error.response?.data?.message || 'Failed to load bookings', isLoading: false });
+        }
+    },
+
+    fetchAllBookings: async (filters = {}) => {
+        set({ isLoading: true, error: null });
+        try {
+            const params = new URLSearchParams();
+            if (filters.status) params.append('status', filters.status);
+            if (filters.type) params.append('type', filters.type);
+            const res = await api.get(`/bookings/admin/all?${params.toString()}`);
+            set({ adminBookings: res.data, isLoading: false });
+        } catch (error) {
+            set({ error: error.response?.data?.message || 'Failed to load all bookings', isLoading: false });
         }
     },
 
@@ -68,11 +82,25 @@ export const useBookingStore = create((set, get) => ({
         try {
             const res = await api.put(`/bookings/${id}`, changes);
             get().fetchBookings();
+            get().fetchAllBookings(); // Added to refresh admin list
             return { success: true, data: res.data };
         } catch (error) {
             return {
                 success: false,
                 error: error.response?.data?.message || 'Modification failed',
+            };
+        }
+    },
+
+    updateBookingStatus: async (id, status, reason = '') => {
+        try {
+            const res = await api.patch(`/bookings/admin/${id}/status`, { status, reason });
+            get().fetchAllBookings();
+            return { success: true, data: res.data };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.response?.data?.message || 'Status update failed',
             };
         }
     },

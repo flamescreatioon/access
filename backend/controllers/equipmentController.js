@@ -2,6 +2,20 @@ const { Equipment, UserCertification, Booking, User, Membership, AccessTier, Equ
 const { Op } = Sequelize;
 const { format } = require('date-fns');
 
+// GET /api/v1/equipment/certifications — Get current user's certifications
+exports.getUserCertifications = async (req, res) => {
+    try {
+        const certifications = await UserCertification.findAll({
+            where: { user_id: req.user.id },
+            order: [['certified_at', 'DESC']]
+        });
+        res.json(certifications);
+    } catch (error) {
+        console.error('Error in getUserCertifications:', error);
+        res.status(500).json({ message: 'Error fetching certifications', error: error.message });
+    }
+};
+
 // GET /api/v1/equipment — List all equipment with filters
 exports.getAllEquipment = async (req, res) => {
     try {
