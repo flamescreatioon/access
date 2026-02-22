@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Equipment extends Model {
         static associate(models) {
             Equipment.belongsTo(models.AccessTier, { foreignKey: 'min_tier_id', as: 'MinTier' });
+            Equipment.belongsTo(models.EquipmentCategory, { foreignKey: 'category_id', as: 'Category' });
             Equipment.hasMany(models.Booking, { foreignKey: 'equipment_id' });
         }
     }
@@ -13,9 +14,13 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        category_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
         category: {
             type: DataTypes.STRING,
-            allowNull: false
+            allowNull: true // Keeping for backward compatibility or migration phase
         },
         description: DataTypes.TEXT,
         status: {

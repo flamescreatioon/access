@@ -1,4 +1,4 @@
-const { User, Membership, AccessTier, AccessLog, Device } = require('../models');
+const { User, Membership, AccessTier, AccessLog, Device, AccessRule } = require('../models');
 const jwt = require('jsonwebtoken');
 
 // Generate a QR Token for a user
@@ -28,7 +28,23 @@ exports.generateToken = async (req, res) => {
             { expiresIn: '60s' }
         );
 
-        res.json({ token: qrToken, expiresIn: 60 });
+        // Generate 6-digit manual access code
+        const accessCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiry = new Date(Date.now() + 62000); // 62 seconds to allow slight buffer over JWT
+
+        // Update user with current access code (using ORM properly)
+        const userModel = await User.findByPk(user.id);
+        await userModel.update({
+            access_code: accessCode,
+            access_code_expires: expiry
+        });
+
+        res.json({
+            token: qrToken,
+            accessCode: accessCode, // Return to student pass
+            expiresIn: 60,
+            isInside: userModel.is_inside
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error generating token', error: error.message });
     }
@@ -129,5 +145,51 @@ exports.myLastScan = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching scan status', error: error.message });
+    }
+};
+
+// GET /api/v1/access/rules
+exports.getAllRules = async (req, res) => {
+    try {
+        const rules = await AccessRule.findAll({
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(rules);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching rules', error: error.message });
+    }
+};
+
+// POST /api/v1/access/rules
+exports.createRule = async (req, res) => {
+    try {
+        const rule = await AccessRule.create(req.body);
+        res.status(201).json(rule);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating rule', error: error.message });
+    }
+};
+
+// PUT /api/v1/access/rules/:id
+exports.updateRule = async (req, res) => {
+    try {
+        const rule = await AccessRule.findByPk(req.params.id);
+        if (!rule) return res.status(404).json({ message: 'Rule not found' });
+        await rule.update(req.body);
+        res.json(rule);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating rule', error: error.message });
+    }
+};
+
+// DELETE /api/v1/access/rules/:id
+exports.deleteRule = async (req, res) => {
+    try {
+        const rule = await AccessRule.findByPk(req.params.id);
+        if (!rule) return res.status(404).json({ message: 'Rule not found' });
+        await rule.destroy();
+        res.json({ message: 'Rule deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting rule', error: error.message });
     }
 };

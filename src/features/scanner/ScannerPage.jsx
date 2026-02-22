@@ -21,32 +21,37 @@ function ScanResultOverlay({ result, onDecision, loading }) {
         expired_token: 'QR Code Expired',
         invalid_token: 'Invalid QR Code',
         user_not_found: 'Member Not Found',
+        already_inside: 'Member Already Inside',
     };
+
+    const isAlreadyInside = result.reason === 'already_inside';
 
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 pb-28 md:pb-4">
             <div className={`w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 ${isValid
                 ? 'bg-gradient-to-br from-success-500 to-success-600'
-                : isDenied
-                    ? 'bg-gradient-to-br from-danger-500 to-danger-600'
-                    : 'bg-gradient-to-br from-warning-500 to-warning-600'
+                : isAlreadyInside
+                    ? 'bg-gradient-to-br from-warning-500 to-warning-600'
+                    : isDenied
+                        ? 'bg-gradient-to-br from-danger-500 to-danger-600'
+                        : 'bg-gradient-to-br from-warning-500 to-warning-600'
                 }`}>
                 {/* Status Header */}
                 <div className="px-6 pt-6 pb-4 text-center text-white">
-                    <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-3 ${isValid ? 'bg-white/20' : 'bg-white/20'}`}>
-                        {isValid ? <Check className="w-8 h-8" /> : <Ban className="w-8 h-8" />}
+                    <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-3 bg-white/20">
+                        {isValid ? <Check className="w-8 h-8" /> : isAlreadyInside ? <AlertTriangle className="w-8 h-8" /> : <Ban className="w-8 h-8" />}
                     </div>
                     <h2 className="text-2xl font-bold">
-                        {isValid ? 'VERIFIED' : isDenied ? 'DENIED' : 'ERROR'}
+                        {isValid ? 'VERIFIED' : isAlreadyInside ? 'ALREADY INSIDE' : isDenied ? 'DENIED' : 'ERROR'}
                     </h2>
-                    {isDenied && (
+                    {(isDenied || isAlreadyInside) && (
                         <p className="mt-1 text-white/80 text-sm">
                             {denyReasons[result.reason] || result.message}
                         </p>
                     )}
                 </div>
 
-                {/* Member Info (when valid) */}
+                {/* Member Info */}
                 {(isValid || result.member) && result.member && (
                     <div className="mx-4 bg-white dark:bg-surface-800 rounded-2xl p-4 space-y-3">
                         <div className="flex items-center gap-3">
@@ -58,24 +63,6 @@ function ScanResultOverlay({ result, onDecision, loading }) {
                                 <p className="text-xs text-surface-500">{result.member.email}</p>
                             </div>
                         </div>
-
-                        {result.membership && (
-                            <div className="grid grid-cols-2 gap-2">
-                                <div className="bg-surface-50 dark:bg-surface-700/50 rounded-xl p-2.5">
-                                    <p className="text-[10px] text-surface-400 uppercase tracking-wider">Tier</p>
-                                    <p className="font-semibold text-sm flex items-center gap-1 mt-0.5">
-                                        <Crown className="w-3.5 h-3.5" style={{ color: '#eab308' }} />
-                                        {result.membership.tier || 'N/A'}
-                                    </p>
-                                </div>
-                                <div className="bg-surface-50 dark:bg-surface-700/50 rounded-xl p-2.5">
-                                    <p className="text-[10px] text-surface-400 uppercase tracking-wider">Status</p>
-                                    <p className={`font-semibold text-sm mt-0.5 ${result.membership.status === 'Active' ? 'text-success-500' : 'text-danger-500'}`}>
-                                        {result.membership.status}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -85,7 +72,7 @@ function ScanResultOverlay({ result, onDecision, loading }) {
                         <div className="flex gap-2">
                             <button onClick={() => onDecision('DENY')} disabled={loading}
                                 className="flex-1 py-3.5 rounded-xl bg-white/20 text-white font-semibold text-sm hover:bg-white/30 transition-colors flex items-center justify-center gap-2">
-                                <Ban className="w-4 h-4" /> Deny Entry
+                                <Ban className="w-4 h-4" /> Deny
                             </button>
                             <button onClick={() => onDecision('GRANT')} disabled={loading}
                                 className="flex-[2] py-3.5 rounded-xl bg-white text-success-600 font-bold text-sm hover:bg-white/90 transition-colors shadow-lg flex items-center justify-center gap-2">
@@ -93,6 +80,21 @@ function ScanResultOverlay({ result, onDecision, loading }) {
                                     <div className="w-4 h-4 border-2 border-success-600 border-t-transparent rounded-full animate-spin" />
                                 ) : (
                                     <><Check className="w-5 h-5" /> Grant Entry</>
+                                )}
+                            </button>
+                        </div>
+                    ) : isAlreadyInside ? (
+                        <div className="flex gap-2">
+                            <button onClick={() => onDecision('DISMISS')}
+                                className="flex-1 py-3.5 rounded-xl bg-white/20 text-white font-semibold text-sm hover:bg-white/30 transition-colors">
+                                Dismiss
+                            </button>
+                            <button onClick={() => onDecision('EXIT')} disabled={loading}
+                                className="flex-[2] py-3.5 rounded-xl bg-white text-warning-600 font-bold text-sm hover:bg-white/90 transition-colors shadow-lg flex items-center justify-center gap-2">
+                                {loading ? (
+                                    <div className="w-4 h-4 border-2 border-warning-600 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <><RotateCcw className="w-5 h-5" /> Manual Checkout</>
                                 )}
                             </button>
                         </div>
@@ -127,6 +129,7 @@ export default function ScannerPage() {
     const [manualCode, setManualCode] = useState('');
     const [toast, setToast] = useState(null);
     const [lastScan, setLastScan] = useState(null);
+    const [clearingHub, setClearingHub] = useState(false);
     const scannerRef = useRef(null);
     const html5QrRef = useRef(null);
 
@@ -319,6 +322,21 @@ export default function ScannerPage() {
         }
     };
 
+    // Handle mass checkout
+    const handleClearHub = async () => {
+        if (!window.confirm('⚠️ Are you sure you want to checkout EVERYONE in the hub? This will reset all active sessions.')) return;
+
+        setClearingHub(true);
+        try {
+            const res = await api.post('/scan/checkout-all');
+            showToast(`✅ ${res.data.message}`);
+        } catch (error) {
+            showToast('❌ Failed to clear hub');
+        } finally {
+            setClearingHub(false);
+        }
+    };
+
     // Loading state
     if (deviceLoading) {
         return (
@@ -432,6 +450,17 @@ export default function ScannerPage() {
                     <Shield className="w-3.5 h-3.5 text-success-500" />
                     <span>Device Authorized</span>
                 </div>
+                {isAdmin && (
+                    <button onClick={handleClearHub} disabled={clearingHub}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-500/10 hover:bg-danger-500/20 text-danger-500 rounded-lg text-[10px] font-black uppercase transition-colors disabled:opacity-50">
+                        {clearingHub ? (
+                            <div className="w-3 h-3 border-2 border-danger-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <RotateCcw className="w-3 h-3" />
+                        )}
+                        <span>Clear Hub</span>
+                    </button>
+                )}
             </div>
 
             {/* Manual Entry Modal */}

@@ -42,4 +42,49 @@ export const useSpaceStore = create((set, get) => ({
     },
 
     clearCurrent: () => set({ currentSpace: null, availability: null }),
+
+    // Admin Actions
+    createSpace: async (spaceData) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await api.post('/spaces', spaceData);
+            set(state => ({
+                spaces: [...state.spaces, res.data],
+                loading: false
+            }));
+            return res.data;
+        } catch (error) {
+            set({ error: error.response?.data?.message || 'Failed to create space', loading: false });
+            throw error;
+        }
+    },
+
+    updateSpace: async (id, spaceData) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await api.put(`/spaces/${id}`, spaceData);
+            set(state => ({
+                spaces: state.spaces.map(s => s.id === id ? res.data : s),
+                loading: false
+            }));
+            return res.data;
+        } catch (error) {
+            set({ error: error.response?.data?.message || 'Failed to update space', loading: false });
+            throw error;
+        }
+    },
+
+    deleteSpace: async (id) => {
+        set({ loading: true, error: null });
+        try {
+            await api.delete(`/spaces/${id}`);
+            set(state => ({
+                spaces: state.spaces.filter(s => s.id !== id),
+                loading: false
+            }));
+        } catch (error) {
+            set({ error: error.response?.data?.message || 'Failed to delete space', loading: false });
+            throw error;
+        }
+    },
 }));

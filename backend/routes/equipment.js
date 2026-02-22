@@ -12,5 +12,6 @@ router.post('/:id/book', authenticate, equipmentController.bookEquipment);
 // Admin / Hub Manager Routes
 router.post('/', authenticate, authorizeRole(['Admin', 'Hub Manager']), equipmentController.createEquipment);
 router.put('/:id', authenticate, authorizeRole(['Admin', 'Hub Manager']), equipmentController.updateEquipment);
+router.delete('/:id', authenticate, authorizeRole(['Admin', 'Hub Manager']), equipmentController.deleteEquipment);
 
 module.exports = router;

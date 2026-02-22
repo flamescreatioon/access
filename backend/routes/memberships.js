@@ -18,5 +18,13 @@ router.post('/upgrade', membershipController.requestUpgrade);
 // Admin Only Routes
 router.post('/', authorizeRole(['Admin']), membershipController.createMembership);
 router.get('/', authorizeRole(['Admin']), membershipController.getAllMemberships);
+router.put('/:id/suspend', authorizeRole(['Admin']), membershipController.suspendMember);
+router.put('/:id/reactivate', authorizeRole(['Admin']), membershipController.reactivateMember);
+router.put('/:id/tier', authorizeRole(['Admin']), membershipController.updateMemberTier);
+
+// Access Tier Management
+router.post('/tiers', authorizeRole(['Admin']), membershipController.createTier);
+router.put('/tiers/:id', authorizeRole(['Admin']), membershipController.updateTier);
+router.delete('/tiers/:id', authorizeRole(['Admin']), membershipController.deleteTier);
 
 module.exports = router;

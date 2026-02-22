@@ -1,4 +1,4 @@
-const { User, Membership, AccessTier } = require('../models');
+const { User, Membership, AccessTier, RejectedAccount } = require('../models');
 const { recordAuditLog } = require('../utils/auditLogger');
 
 // GET /api/v1/onboarding/status
@@ -259,27 +259,48 @@ exports.adminReject = async (req, res) => {
         const user = await User.findByPk(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        await user.update({
-            payment_status: 'REJECTED',
-            activation_status: 'INCOMPLETE',
+        // 1. Archive to RejectedAccounts
+        await RejectedAccount.create({
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            department: user.department,
+            level: user.level,
+            role: user.role,
+            reason: note || 'Rejected by Admin',
+            rejected_by: req.user.id
         });
 
+        // 2. Log the action
         await recordAuditLog({
             user_id: req.user.id,
-            action: 'ADMIN_REJECT_PAYMENT',
+            action: 'ADMIN_REJECT_DELETE',
             resource_type: 'User',
             resource_id: userId,
             req,
             details: { rejectedUser: user.name, note: note || '' },
         });
 
+        // 3. Delete the user (Smoothly thanks to CASCADE)
+        await user.destroy();
+
         res.json({
-            message: 'User payment rejected',
-            activation_status: 'INCOMPLETE',
-            payment_status: 'REJECTED',
+            message: 'User rejected and permanently archived.',
         });
     } catch (error) {
         res.status(500).json({ message: 'Error rejecting user', error: error.message });
+    }
+};
+
+// GET /api/v1/onboarding/admin/rejected-accounts — Get archived rejections
+exports.getRejectedAccounts = async (req, res) => {
+    try {
+        const archived = await RejectedAccount.findAll({
+            order: [['createdAt', 'DESC']],
+        });
+        res.json(archived);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching rejected accounts', error: error.message });
     }
 };
 

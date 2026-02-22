@@ -155,7 +155,7 @@ export default function EquipmentDetail() {
                 <div className="p-6 md:p-8">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                         <div className="flex-1">
-                            <span className="text-[10px] font-black uppercase text-primary-500 tracking-[0.2em] font-mono">{currentEquipment.category}</span>
+                            <span className="text-[10px] font-black uppercase text-primary-500 tracking-[0.2em] font-mono">{currentEquipment.Category?.name || 'Uncategorized'}</span>
                             <h1 className="text-2xl md:text-4xl font-black mt-1">{currentEquipment.name}</h1>
                             <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-surface-500 font-medium">
                                 <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-primary-500/60" /> {currentEquipment.location}</span>

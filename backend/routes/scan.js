@@ -13,5 +13,6 @@ router.post('/validate', authorizeRole(['Hub Manager', 'Admin']), scanController
 router.post('/decision', authorizeRole(['Hub Manager', 'Admin']), scanController.logDecision);
 router.get('/recent', authorizeRole(['Hub Manager', 'Admin']), scanController.getRecentScans);
 router.get('/stats', authorizeRole(['Hub Manager', 'Admin']), scanController.getScanStats);
+router.post('/checkout-all', authorizeRole(['Hub Manager', 'Admin']), scanController.checkoutAll);
 
 module.exports = router;

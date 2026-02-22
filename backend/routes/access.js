@@ -16,4 +16,10 @@ router.post('/validate', authenticateDevice, accessController.validateAccess);
 router.get('/my-last-scan', authenticateToken, accessController.myLastScan);
 router.get('/logs', authenticateToken, authorizeRole(['Admin', 'Security']), accessController.getAllLogs);
 
+// Access Rule Management (Admin Only)
+router.get('/rules', authenticateToken, authorizeRole(['Admin']), accessController.getAllRules);
+router.post('/rules', authenticateToken, authorizeRole(['Admin']), accessController.createRule);
+router.put('/rules/:id', authenticateToken, authorizeRole(['Admin']), accessController.updateRule);
+router.delete('/rules/:id', authenticateToken, authorizeRole(['Admin']), accessController.deleteRule);
+
 module.exports = router;

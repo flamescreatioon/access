@@ -13,6 +13,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+});
+
 // Health Check
 app.get('/', (req, res) => {
     res.json({ message: 'Innovation Hub Access Management Backend API is running' });
@@ -26,9 +32,20 @@ app.use('/api/v1/bookings', require('./routes/bookings'));
 app.use('/api/v1/spaces', require('./routes/spaces'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/equipment', equipmentRoutes);
+app.use('/api/v1/equipment-categories', require('./routes/equipmentCategories'));
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/onboarding', require('./routes/onboarding'));
 app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('GLOBAL ERROR:', err);
+    res.status(500).json({
+        message: 'Internal Server Error',
+        error: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+});
 
 module.exports = app;

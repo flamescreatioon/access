@@ -146,7 +146,7 @@ exports.getUserById = async (req, res) => {
 // POST /api/v1/users — Admin: create a new user
 exports.createUser = async (req, res) => {
     try {
-        const { name, email, password, department, level } = req.body;
+        const { name, email, password, role, department, level } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -164,7 +164,7 @@ exports.createUser = async (req, res) => {
             name,
             email,
             password_hash,
-            role: null,
+            role: role || null,
             department: department || null,
             level: level || null,
             account_status: 'INVITED',
@@ -225,5 +225,18 @@ exports.updateUser = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error updating user', error: error.message });
+    }
+};
+
+// DELETE /api/v1/users/:id — Admin: delete user
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        await user.destroy();
+        res.json({ message: 'User permanently deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting user', error: error.message });
     }
 };

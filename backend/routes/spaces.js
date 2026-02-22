@@ -14,5 +14,6 @@ router.get('/:id/availability', spaceController.getSpaceAvailability);
 // Admin routes
 router.post('/', authorizeRole(['Admin']), spaceController.createSpace);
 router.put('/:id', authorizeRole(['Admin']), spaceController.updateSpace);
+router.delete('/:id', authorizeRole(['Admin']), spaceController.deleteSpace);
 
 module.exports = router;

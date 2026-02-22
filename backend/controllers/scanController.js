@@ -32,7 +32,25 @@ exports.validateScan = async (req, res) => {
         let memberId = null;
         let isLegacy = false;
 
-        if (qr_token && qr_token.startsWith('IHAP:')) {
+        // Check if it's a 6-digit manual manual code
+        if (qr_token && /^\d{6}$/.test(qr_token)) {
+            const { Op } = require('sequelize');
+            const userWithCode = await User.findOne({
+                where: {
+                    access_code: qr_token,
+                    access_code_expires: { [Op.gt]: new Date() }
+                }
+            });
+            if (userWithCode) {
+                memberId = userWithCode.id;
+            } else {
+                return res.json({
+                    status: 'DENIED',
+                    reason: 'invalid_code',
+                    message: 'Invalid or expired manual code',
+                });
+            }
+        } else if (qr_token && qr_token.startsWith('IHAP:')) {
             // Legacy IHAP format: IHAP:{userId}:{timestamp}:{hash}
             const parts = qr_token.split(':');
             if (parts.length >= 4) {
@@ -97,6 +115,15 @@ exports.validateScan = async (req, res) => {
         const member = await User.findByPk(memberId, {
             attributes: { exclude: ['password_hash'] },
         });
+
+        if (member && member.is_inside) {
+            return res.json({
+                status: 'DENIED',
+                reason: 'already_inside',
+                message: 'Member is already checked in',
+                member: { id: member.id, name: member.name, role: member.role }
+            });
+        }
         if (!member) {
             await AccessLog.create({
                 user_id: memberId,
@@ -230,7 +257,7 @@ exports.logDecision = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to decide on this scan' });
         }
 
-        const finalDecision = decision === 'GRANT' ? 'Grant' : 'Deny';
+        const finalDecision = decision === 'GRANT' ? 'Grant' : (decision === 'EXIT' ? 'Exit' : 'Deny');
 
         await scanLog.update({
             decision: finalDecision,
@@ -238,6 +265,13 @@ exports.logDecision = async (req, res) => {
             override: override || false,
             override_reason: override_reason || null,
         });
+
+        // Update User Session Status
+        if (finalDecision === 'Grant' && scanLog.user_id) {
+            await User.update({ is_inside: true }, { where: { id: scanLog.user_id } });
+        } else if (finalDecision === 'Exit' && scanLog.user_id) {
+            await User.update({ is_inside: false }, { where: { id: scanLog.user_id } });
+        }
 
         res.json({
             message: `Entry ${finalDecision.toLowerCase()}ed`,
@@ -303,5 +337,39 @@ exports.getScanStats = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching stats', error: error.message });
+    }
+};
+
+// POST /api/v1/scan/checkout-all — Admin clears all active sessions
+exports.checkoutAll = async (req, res) => {
+    try {
+        const { Op } = require('sequelize');
+
+        // 1. Get count of people inside
+        const insideCount = await User.count({ where: { is_inside: true } });
+
+        if (insideCount === 0) {
+            return res.json({ message: 'Hub is already empty', cleared: 0 });
+        }
+
+        // 2. Perform mass update
+        await User.update({ is_inside: false }, { where: { is_inside: true } });
+
+        // 3. Log the event
+        await AccessLog.create({
+            method: 'system_clear',
+            decision: 'Exit',
+            manager_id: req.user.id,
+            backend_decision: 'VALID',
+            scan_payload: `SYSTEM_RESET: ${insideCount} members checked out`,
+            location_id: req.body.location_id || null
+        });
+
+        res.json({
+            message: `Successfully checked out ${insideCount} members.`,
+            cleared: insideCount
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error performing mass checkout', error: error.message });
     }
 };

@@ -5,12 +5,14 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      User.hasOne(models.Membership, { foreignKey: 'user_id' });
-      User.hasMany(models.AccessLog, { foreignKey: 'user_id' });
-      User.hasMany(models.Booking, { foreignKey: 'user_id' });
-      User.hasMany(models.UserCertification, { foreignKey: 'user_id' });
-      User.hasMany(models.AuditLog, { foreignKey: 'user_id' });
-      User.hasMany(models.RefreshToken, { foreignKey: 'user_id' });
+      User.hasOne(models.Membership, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.AccessLog, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.Booking, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.UserCertification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.AuditLog, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.Device, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
     }
   }
   User.init({
@@ -65,6 +67,18 @@ module.exports = (sequelize, DataTypes) => {
         },
         theme: 'dark'
       }
+    },
+    is_inside: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    access_code: {
+      type: DataTypes.STRING(6),
+      allowNull: true
+    },
+    access_code_expires: {
+      type: DataTypes.DATE,
+      allowNull: true
     }
   }, {
     sequelize,

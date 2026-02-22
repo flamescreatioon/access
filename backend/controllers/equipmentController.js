@@ -1,4 +1,4 @@
-const { Equipment, UserCertification, Booking, User, Membership, AccessTier, Sequelize } = require('../models');
+const { Equipment, UserCertification, Booking, User, Membership, AccessTier, EquipmentCategory, Sequelize } = require('../models');
 const { Op } = Sequelize;
 const { format } = require('date-fns');
 
@@ -8,21 +8,24 @@ exports.getAllEquipment = async (req, res) => {
         const { category, status, min_tier, requires_cert } = req.query;
         const where = { is_active: true };
 
-        if (category) where.category = category;
-        if (status) where.status = status;
-        if (min_tier) where.min_tier_id = { [Op.gte]: min_tier };
+        // Sanitize stringified "null"/"undefined" from URL params
+        if (category && category !== 'null' && category !== 'undefined') where.category_id = category;
+        if (status && status !== 'null' && status !== 'undefined') where.status = status;
+        if (min_tier && min_tier !== 'null' && min_tier !== 'undefined') where.min_tier_id = { [Op.gte]: min_tier };
         if (requires_cert === 'true') where.requires_certification = true;
 
         const equipment = await Equipment.findAll({
             where,
             include: [
-                { model: AccessTier, as: 'MinTier', attributes: ['id', 'name', 'color'] }
+                { model: AccessTier, as: 'MinTier', attributes: ['id', 'name', 'color'] },
+                { model: EquipmentCategory, as: 'Category' }
             ],
-            order: [['category', 'ASC'], ['name', 'ASC']]
+            order: [['name', 'ASC']]
         });
 
         res.json(equipment);
     } catch (error) {
+        console.error('Error in getAllEquipment:', error);
         res.status(500).json({ message: 'Error fetching equipment', error: error.message });
     }
 };
@@ -32,7 +35,8 @@ exports.getEquipmentById = async (req, res) => {
     try {
         const equipment = await Equipment.findByPk(req.params.id, {
             include: [
-                { model: AccessTier, as: 'MinTier', attributes: ['id', 'name', 'color'] }
+                { model: AccessTier, as: 'MinTier', attributes: ['id', 'name', 'color'] },
+                { model: EquipmentCategory, as: 'Category' }
             ]
         });
 
@@ -55,6 +59,7 @@ exports.getEquipmentById = async (req, res) => {
 
         res.json({ ...equipment.toJSON(), isCertified });
     } catch (error) {
+        console.error('Error in getEquipmentById:', error);
         res.status(500).json({ message: 'Error fetching equipment detail', error: error.message });
     }
 };
@@ -103,6 +108,7 @@ exports.getEquipmentAvailability = async (req, res) => {
 
         res.json({ date, slots });
     } catch (error) {
+        console.error('Error in getEquipmentAvailability:', error);
         res.status(500).json({ message: 'Error fetching availability', error: error.message });
     }
 };
@@ -233,6 +239,7 @@ exports.bookEquipment = async (req, res) => {
 
         res.status(201).json(booking);
     } catch (error) {
+        console.error('Error in bookEquipment:', error);
         res.status(500).json({ message: 'Error booking equipment', error: error.message });
     }
 };
@@ -240,9 +247,18 @@ exports.bookEquipment = async (req, res) => {
 // Admin Functions
 exports.createEquipment = async (req, res) => {
     try {
-        const equipment = await Equipment.create(req.body);
+        const data = { ...req.body };
+        // Sanitize numeric/foreign key fields that might be empty strings from frontend
+        if (data.category_id === '') data.category_id = null;
+        if (data.min_tier_id === '') data.min_tier_id = null;
+        if (data.hourly_cost === '') data.hourly_cost = 0;
+        if (data.max_session_hours === '') data.max_session_hours = 4;
+        if (data.daily_limit_hours === '') data.daily_limit_hours = 8;
+
+        const equipment = await Equipment.create(data);
         res.status(201).json(equipment);
     } catch (error) {
+        console.error('Error in createEquipment:', error);
         res.status(500).json({ message: 'Error creating equipment', error: error.message });
     }
 };
@@ -251,9 +267,26 @@ exports.updateEquipment = async (req, res) => {
     try {
         const equipment = await Equipment.findByPk(req.params.id);
         if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
-        await equipment.update(req.body);
+
+        const data = { ...req.body };
+        if (data.category_id === '') data.category_id = null;
+        if (data.min_tier_id === '') data.min_tier_id = null;
+
+        await equipment.update(data);
         res.json(equipment);
     } catch (error) {
+        console.error('Error in updateEquipment:', error);
         res.status(500).json({ message: 'Error updating equipment', error: error.message });
+    }
+};
+
+exports.deleteEquipment = async (req, res) => {
+    try {
+        const equipment = await Equipment.findByPk(req.params.id);
+        if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
+        await equipment.destroy();
+        res.json({ message: 'Equipment deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting equipment', error: error.message });
     }
 };

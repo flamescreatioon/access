@@ -13,5 +13,6 @@ router.post('/complete/:stepId', authenticateToken, onboardingController.complet
 // Admin endpoints
 router.put('/admin/approve/:userId', authenticateToken, authorizeRole(['Admin', 'Hub Manager']), onboardingController.adminApprove);
 router.put('/admin/reject/:userId', authenticateToken, authorizeRole(['Admin', 'Hub Manager']), onboardingController.adminReject);
+router.get('/admin/rejected-accounts', authenticateToken, authorizeRole(['Admin', 'Hub Manager']), onboardingController.getRejectedAccounts);
 
 module.exports = router;

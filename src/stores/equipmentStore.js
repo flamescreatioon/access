@@ -52,5 +52,84 @@ export const useEquipmentStore = create((set, get) => ({
         }
     },
 
+    createEquipment: async (dataSpec) => {
+        try {
+            const res = await api.post('/equipment', dataSpec);
+            set(state => ({ equipment: [...state.equipment, res.data] }));
+            return { success: true, data: res.data };
+        } catch (err) {
+            return { success: false, error: err.response?.data?.message || 'Failed to create tool' };
+        }
+    },
+
+    updateEquipment: async (id, dataSpec) => {
+        try {
+            const res = await api.put(`/equipment/${id}`, dataSpec);
+            set(state => ({
+                equipment: state.equipment.map(e => e.id === id ? res.data : e)
+            }));
+            return { success: true, data: res.data };
+        } catch (err) {
+            return { success: false, error: err.response?.data?.message || 'Failed to update tool' };
+        }
+    },
+
+    deleteEquipment: async (id) => {
+        try {
+            await api.delete(`/equipment/${id}`);
+            set(state => ({
+                equipment: state.equipment.filter(e => e.id !== id)
+            }));
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.response?.data?.message || 'Failed to delete tool' };
+        }
+    },
+
+    // Categories
+    categories: [],
+    fetchCategories: async () => {
+        try {
+            const res = await api.get('/equipment-categories');
+            set({ categories: res.data });
+        } catch (err) {
+            console.error('Failed to fetch categories', err);
+        }
+    },
+
+    createCategory: async (dataSpec) => {
+        try {
+            const res = await api.post('/equipment-categories', dataSpec);
+            set(state => ({ categories: [...state.categories, res.data] }));
+            return { success: true, data: res.data };
+        } catch (err) {
+            return { success: false, error: err.response?.data?.message || 'Failed to create category' };
+        }
+    },
+
+    updateCategory: async (id, dataSpec) => {
+        try {
+            const res = await api.put(`/equipment-categories/${id}`, dataSpec);
+            set(state => ({
+                categories: state.categories.map(c => c.id === id ? res.data : c)
+            }));
+            return { success: true, data: res.data };
+        } catch (err) {
+            return { success: false, error: err.response?.data?.message || 'Failed to update category' };
+        }
+    },
+
+    deleteCategory: async (id) => {
+        try {
+            await api.delete(`/equipment-categories/${id}`);
+            set(state => ({
+                categories: state.categories.filter(c => c.id !== id)
+            }));
+            return { success: true };
+        } catch (err) {
+            return { success: false, error: err.response?.data?.message || 'Failed to delete category' };
+        }
+    },
+
     clearCurrent: () => set({ currentEquipment: null, availability: null })
 }));

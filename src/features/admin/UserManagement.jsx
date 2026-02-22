@@ -4,7 +4,7 @@ import {
     UserPlus, Search, X, Eye, Shield, Mail, Calendar,
     Crown, Activity, ChevronRight, AlertTriangle, Check,
     Clock, CheckCircle2, XCircle, Building2, Layers,
-    Users, GraduationCap, BookOpen, CreditCard
+    Users, GraduationCap, BookOpen, CreditCard, Trash2, Smartphone
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -65,6 +65,19 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
             onRefresh?.();
         } catch (err) {
             toast.error('Failed to reject');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm(`⚠️ Permanently delete ${user.name}? This cannot be undone.`)) return;
+
+        try {
+            await api.delete(`/users/${user.id}`);
+            toast.success('User deleted successfully');
+            onClose();
+            onRefresh?.();
+        } catch (err) {
+            toast.error('Failed to delete user');
         }
     };
 
@@ -198,6 +211,17 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
                                 </p>
                             )}
                         </div>
+
+                        {/* Dangerous Zone */}
+                        <div className="pt-6 border-t border-surface-100 dark:border-surface-700">
+                            <button onClick={handleDelete}
+                                className="w-full py-3 rounded-xl border border-danger-500/20 text-danger-500 text-sm font-bold flex items-center justify-center gap-2 hover:bg-danger-500 hover:text-white transition-all">
+                                <Trash2 className="w-4 h-4" /> Delete User Account
+                            </button>
+                            <p className="text-[10px] text-surface-400 text-center mt-2 italic">
+                                This action is permanent and will remove all associated logs.
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>
@@ -207,7 +231,7 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
 
 /* ───── Create User Modal ───── */
 function CreateUserModal({ onClose, onCreated }) {
-    const [form, setForm] = useState({ name: '', email: '', password: '', department: '', level: '' });
+    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Student', department: '', level: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -234,7 +258,7 @@ function CreateUserModal({ onClose, onCreated }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <form onSubmit={handleSubmit} className="bg-white dark:bg-surface-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
                 <h3 className="text-lg font-bold mb-1">Create New Account</h3>
-                <p className="text-sm text-surface-500 mb-5">Admin creates the account — user picks role at first login</p>
+                <p className="text-sm text-surface-500 mb-5">Admin creates the account with specific role</p>
 
                 {error && (
                     <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-danger-500/10 text-danger-500 text-sm">
@@ -260,6 +284,16 @@ function CreateUserModal({ onClose, onCreated }) {
                         <input type="password" placeholder="Min. 6 characters" value={form.password}
                             onChange={(e) => setForm({ ...form, password: e.target.value })}
                             className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-sm focus:outline-none focus:border-primary-500 transition-colors" />
+                    </div>
+                    <div>
+                        <label className="text-xs font-medium text-surface-500 mb-1 block">Initial Role *</label>
+                        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-sm focus:outline-none focus:border-primary-500 transition-colors">
+                            <option value="Student">Student</option>
+                            <option value="Hub Manager">Hub Manager</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Lecturer">Lecturer</option>
+                        </select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -315,6 +349,7 @@ export default function UserManagement() {
     const [filter, setFilter] = useState('all');
     const [showCreate, setShowCreate] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [rejectedUsers, setRejectedUsers] = useState([]);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -328,8 +363,18 @@ export default function UserManagement() {
         }
     };
 
+    const fetchRejectedUsers = async () => {
+        try {
+            const res = await api.get('/onboarding/admin/rejected-accounts');
+            setRejectedUsers(res.data);
+        } catch (err) {
+            console.error('Error fetching rejected users:', err);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
+        fetchRejectedUsers();
     }, []);
 
     // Derived counts
@@ -368,8 +413,9 @@ export default function UserManagement() {
         e.stopPropagation();
         try {
             await api.put(`/onboarding/admin/reject/${userId}`);
-            toast.success('Payment rejected');
+            toast.success('User rejected and archived');
             fetchUsers();
+            fetchRejectedUsers();
         } catch (err) {
             toast.error('Failed to reject');
         }
@@ -453,6 +499,7 @@ export default function UserManagement() {
                         { key: 'active', label: 'Active' },
                         { key: 'inactive', label: 'Inactive' },
                         { key: 'lecturers', label: 'Lecturers' },
+                        { key: 'rejected', label: '🚫 Rejected' },
                     ].map(f => (
                         <button key={f.key} onClick={() => setFilter(f.key)}
                             className={`px-3 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap
@@ -482,19 +529,20 @@ export default function UserManagement() {
 
             {/* User Cards */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map(user => {
+                {(filter === 'rejected' ? rejectedUsers : filtered).map(user => {
                     const initials = (user.name || '?').split(' ').map(n => n[0]).join('').toUpperCase();
                     const isAwaiting = user.payment_status === 'AWAITING_ADMIN_CONFIRMATION';
+                    const isRejected = filter === 'rejected';
 
                     return (
-                        <div key={user.id}
-                            onClick={() => setSelectedUser(user)}
-                            className={`bg-white dark:bg-surface-800/50 rounded-2xl border p-5 hover:shadow-lg transition-all duration-300 cursor-pointer group ${isAwaiting
+                        <div key={isRejected ? `rej-${user.id}` : user.id}
+                            onClick={() => !isRejected && setSelectedUser(user)}
+                            className={`bg-white dark:bg-surface-800/50 rounded-2xl border p-5 transition-all duration-300 ${isRejected ? 'opacity-80 border-surface-200 dark:border-surface-700/50 grayscale-[0.3]' : 'hover:shadow-lg cursor-pointer group'} ${isAwaiting
                                 ? 'border-warning-400/50 dark:border-warning-500/30 ring-1 ring-warning-200 dark:ring-warning-900/30'
-                                : 'border-surface-200 dark:border-surface-700/50 hover:border-primary-300 dark:hover:border-primary-700'}`}>
+                                : !isRejected ? 'border-surface-200 dark:border-surface-700/50 hover:border-primary-300 dark:hover:border-primary-700' : ''}`}>
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-accent-400 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md ${isRejected ? 'bg-surface-400' : 'bg-gradient-to-br from-primary-400 to-accent-400'}`}>
                                         {initials}
                                     </div>
                                     <div>
@@ -504,31 +552,36 @@ export default function UserManagement() {
                                         </p>
                                     </div>
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-surface-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />
+                                {!isRejected && <ChevronRight className="w-4 h-4 text-surface-300 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" />}
                             </div>
 
                             {/* Tags */}
                             <div className="flex flex-wrap items-center gap-2 mt-4">
-                                {user.role && (
-                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleStyles[user.role] || roleStyles.Member}`}>
-                                        {user.role}
+                                {isRejected ? (
+                                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-danger-500/10 text-danger-600 uppercase">
+                                        Permanently Rejected
                                     </span>
+                                ) : (
+                                    <>
+                                        {user.role && (
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${roleStyles[user.role] || roleStyles.Member}`}>
+                                                {user.role}
+                                            </span>
+                                        )}
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${paymentStatusStyles[user.payment_status] || ''}`}>
+                                            {user.payment_status?.replace(/_/g, ' ') || '—'}
+                                        </span>
+                                    </>
                                 )}
-                                {!user.role && (
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-200 dark:bg-surface-700 text-surface-500">
-                                        No Role
-                                    </span>
-                                )}
-                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${paymentStatusStyles[user.payment_status] || ''}`}>
-                                    {user.payment_status?.replace(/_/g, ' ') || '—'}
-                                </span>
-                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${user.activation_status === 'ACTIVE'
-                                    ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400'
-                                    : 'bg-surface-200 dark:bg-surface-700 text-surface-500'
-                                    }`}>
-                                    {user.activation_status || 'INACTIVE'}
-                                </span>
                             </div>
+
+                            {/* Reason for Rejection */}
+                            {isRejected && user.reason && (
+                                <div className="mt-3 p-3 rounded-lg bg-danger-500/5 border border-danger-500/10">
+                                    <p className="text-[11px] text-danger-600/80 font-medium uppercase tracking-wider mb-1">Reason</p>
+                                    <p className="text-xs text-surface-500 italic">"{user.reason}"</p>
+                                </div>
+                            )}
 
                             {/* Department & Level */}
                             {(user.department || user.level) && (
@@ -554,7 +607,7 @@ export default function UserManagement() {
 
                             <div className="flex items-center gap-1 mt-3 text-[11px] text-surface-400">
                                 <Calendar className="w-3 h-3" />
-                                Joined {user.createdAt ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true }) : 'recently'}
+                                {isRejected ? 'Rejected' : 'Joined'} {user.createdAt ? formatDistanceToNow(new Date(user.createdAt), { addSuffix: true }) : 'recently'}
                             </div>
                         </div>
                     );

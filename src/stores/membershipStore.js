@@ -5,6 +5,7 @@ export const useMembershipStore = create((set, get) => ({
     members: [],
     currentMembership: null,
     history: [],
+    tiers: [],
     isLoading: false,
     error: null,
 
@@ -25,6 +26,15 @@ export const useMembershipStore = create((set, get) => ({
             set({ history: response.data });
         } catch (error) {
             console.error('Error fetching history:', error);
+        }
+    },
+
+    fetchTiers: async () => {
+        try {
+            const response = await api.get('/memberships/tiers');
+            set({ tiers: response.data });
+        } catch (error) {
+            console.error('Error fetching tiers:', error);
         }
     },
 
@@ -52,10 +62,39 @@ export const useMembershipStore = create((set, get) => ({
     fetchAllMembers: async () => {
         set({ isLoading: true });
         try {
+            // Also fetch tiers for management
+            get().fetchTiers();
             const response = await api.get('/memberships');
             set({ members: response.data, isLoading: false });
         } catch (error) {
             set({ error: error.message, isLoading: false });
+        }
+    },
+
+    suspendMember: async (id) => {
+        try {
+            await api.put(`/memberships/${id}/suspend`);
+            get().fetchAllMembers();
+        } catch (error) {
+            console.error('Error suspending member:', error);
+        }
+    },
+
+    reactivateMember: async (id) => {
+        try {
+            await api.put(`/memberships/${id}/reactivate`);
+            get().fetchAllMembers();
+        } catch (error) {
+            console.error('Error reactivating member:', error);
+        }
+    },
+
+    updateMemberTier: async (id, tierId) => {
+        try {
+            await api.put(`/memberships/${id}/tier`, { tier_id: tierId });
+            get().fetchAllMembers();
+        } catch (error) {
+            console.error('Error updating member tier:', error);
         }
     },
 
@@ -77,7 +116,7 @@ export const useMembershipStore = create((set, get) => ({
     generateQrToken: async () => {
         try {
             const response = await api.post('/access/generate-token');
-            return response.data.token;
+            return response.data; // Now returns { token, accessCode, isInside }
         } catch (error) {
             console.error('Error generating QR token:', error);
             return null;

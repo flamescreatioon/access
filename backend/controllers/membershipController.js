@@ -133,3 +133,80 @@ exports.getAllTiers = async (req, res) => {
         res.status(500).json({ message: 'Error fetching tiers', error: error.message });
     }
 };
+
+// PUT /api/v1/memberships/:id/suspend
+exports.suspendMember = async (req, res) => {
+    try {
+        const membership = await Membership.findByPk(req.params.id);
+        if (!membership) return res.status(404).json({ message: 'Membership not found' });
+
+        await membership.update({ status: 'Suspended' });
+        res.json(membership);
+    } catch (error) {
+        res.status(500).json({ message: 'Error suspending membership', error: error.message });
+    }
+};
+
+// PUT /api/v1/memberships/:id/reactivate
+exports.reactivateMember = async (req, res) => {
+    try {
+        const membership = await Membership.findByPk(req.params.id);
+        if (!membership) return res.status(404).json({ message: 'Membership not found' });
+
+        await membership.update({ status: 'Active' });
+        res.json(membership);
+    } catch (error) {
+        res.status(500).json({ message: 'Error reactivating membership', error: error.message });
+    }
+};
+
+// PUT /api/v1/memberships/:id/tier
+exports.updateMemberTier = async (req, res) => {
+    try {
+        const { tier_id } = req.body;
+        const membership = await Membership.findByPk(req.params.id);
+        if (!membership) return res.status(404).json({ message: 'Membership not found' });
+
+        const tier = await AccessTier.findByPk(tier_id);
+        if (!tier) return res.status(404).json({ message: 'Tier not found' });
+
+        await membership.update({ tier_id });
+        res.json(membership);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating membership tier', error: error.message });
+    }
+};
+
+// POST /api/v1/memberships/tiers
+exports.createTier = async (req, res) => {
+    try {
+        const tier = await AccessTier.create(req.body);
+        res.status(201).json(tier);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating tier', error: error.message });
+    }
+};
+
+// PUT /api/v1/memberships/tiers/:id
+exports.updateTier = async (req, res) => {
+    try {
+        const tier = await AccessTier.findByPk(req.params.id);
+        if (!tier) return res.status(404).json({ message: 'Tier not found' });
+        await tier.update(req.body);
+        res.json(tier);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating tier', error: error.message });
+    }
+};
+
+// DELETE /api/v1/memberships/tiers/:id
+exports.deleteTier = async (req, res) => {
+    try {
+        const tier = await AccessTier.findByPk(req.params.id);
+        if (!tier) return res.status(404).json({ message: 'Tier not found' });
+        await tier.destroy();
+        res.json({ message: 'Tier deleted' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting tier', error: error.message });
+    }
+};

@@ -151,3 +151,15 @@ exports.updateSpace = async (req, res) => {
         res.status(500).json({ message: 'Error updating space', error: error.message });
     }
 };
+// DELETE /api/v1/spaces/:id — Admin: delete space
+exports.deleteSpace = async (req, res) => {
+    try {
+        const space = await Space.findByPk(req.params.id);
+        if (!space) return res.status(404).json({ message: 'Space not found' });
+
+        await space.destroy();
+        res.json({ message: 'Space deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting space', error: error.message });
+    }
+};

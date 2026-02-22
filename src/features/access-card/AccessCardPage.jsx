@@ -21,6 +21,8 @@ export default function AccessCardPage() {
     const { user } = useAuthStore();
     const { currentMembership, generateQrToken, fetchCurrentMembership } = useMembershipStore();
     const [qrToken, setQrToken] = useState('');
+    const [manualCode, setManualCode] = useState('');
+    const [isInside, setIsInside] = useState(false);
     const [timeLeft, setTimeLeft] = useState(30);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [generating, setGenerating] = useState(false);
@@ -40,9 +42,11 @@ export default function AccessCardPage() {
         isGenerating.current = true;
         setGenerating(true);
         try {
-            const token = await generateQrToken();
-            if (token) {
-                setQrToken(token);
+            const data = await generateQrToken();
+            if (data?.token) {
+                setQrToken(data.token);
+                setManualCode(data.accessCode || '');
+                setIsInside(data.isInside || false);
                 setTimeLeft(30);
             }
         } finally {
@@ -124,8 +128,8 @@ export default function AccessCardPage() {
             {scanFeedback && (
                 <div className="fixed inset-x-4 top-24 z-50 animate-in slide-in-from-top-10 duration-500">
                     <div className={`p-6 rounded-[2rem] shadow-2xl backdrop-blur-xl border ${scanFeedback.status === 'Grant'
-                            ? 'bg-success-500/90 border-success-400 text-white'
-                            : 'bg-danger-500/90 border-danger-400 text-white'
+                        ? 'bg-success-500/90 border-success-400 text-white'
+                        : 'bg-danger-500/90 border-danger-400 text-white'
                         } flex items-center gap-4`}>
                         <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center">
                             {scanFeedback.status === 'Grant' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
@@ -160,9 +164,17 @@ export default function AccessCardPage() {
                             <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">Innovation Hub Pass</p>
                             <p className="text-white font-black text-xl tracking-tight">{user?.name || 'Hub Member'}</p>
                         </div>
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur text-white text-[10px] font-black uppercase tracking-wider`}>
-                            {isOnline ? <WifiIcon className="w-3.5 h-3.5" /> : <WifiOffIcon className="w-3.5 h-3.5" />}
-                            <span>{isOnline ? 'Encrypted' : 'Offline'}</span>
+                        <div className={`flex flex-col items-end gap-1.5`}>
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur rounded-full text-white text-[10px] font-black uppercase">
+                                {isOnline ? <WifiIcon className="w-3.5 h-3.5" /> : <WifiOffIcon className="w-3.5 h-3.5" />}
+                                <span>{isOnline ? 'Encrypted' : 'Offline'}</span>
+                            </div>
+                            {isInside && (
+                                <div className="flex items-center gap-1.5 px-3 py-1 bg-warning-500/30 backdrop-blur rounded-full text-warning-200 text-[10px] font-black uppercase ring-1 ring-warning-500/50">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-warning-400 animate-pulse" />
+                                    <span>Already Inside</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -198,6 +210,23 @@ export default function AccessCardPage() {
                                 {/* Anti-screenshot overlay (CSS based) */}
                                 <div className="qr-overlay rounded-3xl" />
                             </div>
+
+                            {/* Manual Access Code Section */}
+                            {manualCode && (
+                                <div className="mt-8 flex flex-col items-center">
+                                    <p className="text-white/50 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Manual Entry Code</p>
+                                    <div className="flex gap-2">
+                                        {manualCode.split('').map((char, i) => (
+                                            <div key={i} className="w-10 h-12 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 flex items-center justify-center text-white text-xl font-black shadow-lg">
+                                                {char}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-white/30 text-[9px] mt-3 font-medium uppercase tracking-widest text-center px-4">
+                                        Type this if camera scan fails
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="py-12 px-6 text-center space-y-4">
