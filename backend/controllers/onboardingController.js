@@ -73,11 +73,8 @@ exports.getOnboardingStatus = async (req, res) => {
         }
 
         if (isPrivileged) {
-            console.log(`[DEBUG] Hub Manager / Admin Bypass for User ${user.id} (${user.name}). Role: ${user.role}, Status: ${user.activation_status}`);
             nextStep = 'READY'; // Force discovery
         }
-
-        console.log(`[DEBUG] Onboarding Status for ${user.id}: Role=${user.role}, NextStep=${nextStep}, Completion=${completion}%, Stages=${stages.length}`);
 
         res.json({
             user: {
@@ -109,6 +106,7 @@ exports.getOnboardingStatus = async (req, res) => {
             nextStep,
             userName: user.name,
             userPhone: user.phone,
+            matricNumber: user.matric_number,
         });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching onboarding status', error: error.message });
@@ -118,7 +116,7 @@ exports.getOnboardingStatus = async (req, res) => {
 // PUT /api/v1/onboarding/confirm-details
 exports.confirmDetails = async (req, res) => {
     try {
-        const { name, department, level, phone } = req.body;
+        const { name, department, level, phone, matric_number } = req.body;
         const user = await User.findByPk(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -131,6 +129,7 @@ exports.confirmDetails = async (req, res) => {
             department: department || user.department,
             level: level || user.level,
             phone,
+            matric_number: matric_number || user.matric_number,
             profile_complete: true,
             onboarding_status: 'IN_PROGRESS',
         });

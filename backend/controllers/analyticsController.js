@@ -70,6 +70,10 @@ exports.getDashboardStats = async (req, res) => {
 
 exports.getGrowthData = async (req, res) => {
     try {
+        const cacheKey = 'growth_data';
+        const cachedData = getCached(cacheKey);
+        if (cachedData) return res.json(cachedData);
+
         const days = 14;
         const growthData = [];
         const today = new Date();

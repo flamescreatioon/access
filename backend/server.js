@@ -9,6 +9,10 @@ async function startServer() {
         await sequelize.authenticate();
         console.log('Database connected successfully (NeonDB/PostgreSQL).');
 
+        // Sync models (optional, use migrations in production)
+        // await sequelize.sync({ alter: true }); 
+        // console.log('Database synced (alter: true).');
+
         // Only start the server if not in a serverless environment
         // Vercel handles the listening part for us
         if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {

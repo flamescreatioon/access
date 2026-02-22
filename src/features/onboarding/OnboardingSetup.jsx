@@ -20,6 +20,7 @@ const OnboardingSetup = () => {
     const [department, setDepartment] = useState('');
     const [level, setLevel] = useState('');
     const [phone, setPhone] = useState('');
+    const [matricNumber, setMatricNumber] = useState('');
 
     useEffect(() => {
         const syncStatus = async () => {
@@ -38,6 +39,7 @@ const OnboardingSetup = () => {
             setPhone(status.userPhone || user?.phone || '');
             setDepartment(status.department || '');
             setLevel(status.level || '');
+            setMatricNumber(status.matricNumber || '');
         }
     }, [status]);
 
@@ -47,7 +49,13 @@ const OnboardingSetup = () => {
         if (!phone.trim()) return toast.error('Phone number is required');
 
         setLoading(true);
-        const res = await confirmDetails({ name, department, level, phone });
+        const res = await confirmDetails({
+            name,
+            department,
+            level,
+            phone,
+            matric_number: matricNumber
+        });
         if (res.success) {
             toast.success('Details confirmed!');
         } else {
@@ -145,6 +153,17 @@ const OnboardingSetup = () => {
                                             onChange={(e) => setPhone(e.target.value)}
                                             className="w-full pl-12 pr-4 py-4 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all"
                                             required />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-surface-400 ml-1">Matric Number (Students Only)</label>
+                                    <div className="relative">
+                                        <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
+                                        <input type="text" placeholder="e.g. 2024/0001" value={matricNumber}
+                                            onChange={(e) => setMatricNumber(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-4 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl font-bold focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                                        />
                                     </div>
                                 </div>
 

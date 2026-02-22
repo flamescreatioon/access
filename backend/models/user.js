@@ -58,6 +58,10 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false
     },
     phone: DataTypes.STRING,
+    matric_number: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     settings: {
       type: DataTypes.JSONB,
       defaultValue: {

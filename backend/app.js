@@ -14,7 +14,7 @@ const app = express();
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per 15 mins
+    max: 1000, // Limit each IP to 1000 requests per 15 mins (was 100)
     message: { message: 'Too many requests, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -30,7 +30,20 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request Logger
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    const skipLog = [
+        '/api/v1/onboarding/status',
+        '/api/v1/analytics/growth',
+        '/api/v1/analytics/trends',
+        '/api/v1/analytics/stats',
+        '/api/v1/notifications',
+        '/api/v1/bookings',
+        '/api/v1/access/logs',
+        '/api/v1/memberships'
+    ].some(path => req.url.includes(path));
+
+    if (!skipLog) {
+        console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    }
     next();
 });
 

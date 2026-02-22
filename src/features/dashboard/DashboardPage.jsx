@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { useMembershipStore } from '../../stores/membershipStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -104,8 +104,12 @@ export default function DashboardPage() {
     const isSecurity = user?.role === ROLES.SECURITY;
     const [loading, setLoading] = useState(true);
     const [isPoorConnection, setIsPoorConnection] = useState(false);
+    const initialized = useRef(false);
 
+    // 1. Initial Data Load
     useEffect(() => {
+        if (initialized.current || !user?.id) return;
+
         const initializeDashboard = async () => {
             setLoading(true);
             const timeoutId = setTimeout(() => setIsPoorConnection(true), 12000);
@@ -145,7 +149,9 @@ export default function DashboardPage() {
                     await Promise.all(tasks);
                 }
 
+                clearTimeout(timeoutId);
                 setIsPoorConnection(false);
+                initialized.current = true;
             } catch (err) {
                 console.error("Dashboard initialization error:", err);
                 setIsPoorConnection(true);
@@ -154,22 +160,23 @@ export default function DashboardPage() {
             }
         };
 
-        if (user?.id) {
-            initializeDashboard();
-        }
+        initializeDashboard();
+    }, [user?.id, isAdmin, isSecurity, fetchBookings, fetchLogs, fetchNotifications, fetchOnboardingStatus, fetchAllAnalytics, fetchAllMembers, fetchCurrentMembership]);
 
-        // Smart Polling: Refresh data every 30 seconds
+    // 2. Periodic Polling
+    useEffect(() => {
+        if (!user?.id) return;
+
         const pollInterval = setInterval(() => {
-            if (user?.id && !loading) {
+            // Only poll if not currently loading and already initialized
+            if (!loading && initialized.current) {
                 fetchBookings();
                 if (isAdmin || isSecurity) fetchLogs();
                 fetchNotifications();
             }
-        }, 30000);
+        }, 60000);
 
-        return () => {
-            clearInterval(pollInterval);
-        };
+        return () => clearInterval(pollInterval);
     }, [user?.id, isAdmin, isSecurity, fetchBookings, fetchLogs, fetchNotifications, loading]);
 
     if (loading && !onboardingStatus) {

@@ -387,8 +387,8 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
                                     <button onClick={handleToggleDeactivation}
                                         disabled={isProcessing || (currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager'))}
                                         className={`w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${detail?.account_status === 'DEACTIVATED'
-                                                ? 'border-success-500/20 text-success-600 hover:bg-success-500/10'
-                                                : 'border-warning-500/20 text-warning-600 hover:bg-warning-500/10'
+                                            ? 'border-success-500/20 text-success-600 hover:bg-success-500/10'
+                                            : 'border-warning-500/20 text-warning-600 hover:bg-warning-500/10'
                                             }`}>
                                         {detail?.account_status === 'DEACTIVATED' ? (
                                             <> <CheckCircle2 className="w-3.5 h-3.5" /> Activate Account </>
@@ -452,7 +452,7 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
 
 /* ───── Create User Modal ───── */
 function CreateUserModal({ onClose, onCreated, tiers = [] }) {
-    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Student', department: '', level: '', tier_id: '' });
+    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Student', department: '', level: '', tier_id: '', matric_number: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { user: currentUser } = useAuthStore();
@@ -552,6 +552,12 @@ function CreateUserModal({ onClose, onCreated, tiers = [] }) {
                                 <option value="PG">PG</option>
                             </select>
                         </div>
+                    </div>
+                    <div>
+                        <label className="text-xs font-medium text-surface-500 mb-1 block">Matric Number (Optional)</label>
+                        <input type="text" placeholder="e.g. 2024/0001" value={form.matric_number}
+                            onChange={(e) => setForm({ ...form, matric_number: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-sm focus:outline-none focus:border-primary-500 transition-colors" />
                     </div>
                 </div>
 

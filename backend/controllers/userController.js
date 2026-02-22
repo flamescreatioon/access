@@ -149,7 +149,7 @@ exports.getUserById = async (req, res) => {
 // POST /api/v1/users — Admin: create a new user
 exports.createUser = async (req, res) => {
     try {
-        const { name, email, password, role, department, level, tier_id } = req.body;
+        const { name, email, password, role, department, level, tier_id, matric_number } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -177,6 +177,7 @@ exports.createUser = async (req, res) => {
             role: role || null,
             department: department || null,
             level: level || null,
+            matric_number: matric_number || null,
             account_status: isAdminRole ? 'ACTIVE' : 'INVITED',
             activation_status: isAdminRole ? 'ACTIVE' : 'INCOMPLETE',
             payment_status: isAdminRole ? 'NOT_REQUIRED' : 'NOT_REQUESTED',
