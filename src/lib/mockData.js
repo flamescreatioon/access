@@ -16,31 +16,31 @@ export const MEMBERSHIP_TIERS = [
 ];
 
 export const ROOMS = [
-    { id: 'r1', name: 'Cafe and lounge', capacity: 20, floor: 0, amenities: ['Coffee', 'Wi-Fi', 'Lounge Chairs'], image: '☕' },
-    { id: 'r2', name: 'Server room', capacity: 2, floor: 0, amenities: ['AC', 'Racks', 'Security'], image: '🖥️' },
-    { id: 'r3', name: 'Colab Room Left (Co-working space)', capacity: 15, floor: 1, amenities: ['Wi-Fi', 'Hot Desks'], image: '💻' },
-    { id: 'r4', name: 'Design studio', capacity: 8, floor: 1, amenities: ['Drawing Tablets', 'iMacs'], image: '🎨' },
-    { id: 'r5', name: 'Rapid Prototype Studio', capacity: 10, floor: 1, amenities: ['3D Printers', 'Laser Cutter'], image: '🧪' },
-    { id: 'r6', name: 'Food and agritech lab', capacity: 12, floor: 0, amenities: ['Lab Benches', 'Sensors'], image: '🌱' },
-    { id: 'r7', name: 'Tech Transfer Office', capacity: 4, floor: 1, amenities: ['Meeting Table', 'Storage'], image: '📁' },
-    { id: 'r8', name: 'Pitch Garage', capacity: 40, floor: 0, amenities: ['Stage', 'Projector', 'Sound System'], image: '🚗' },
-    { id: 'r9', name: 'Colab Room Right (Co-working space)', capacity: 15, floor: 1, amenities: ['Wi-Fi', 'Hot Desks'], image: '💻' },
-    { id: 'r10', name: 'Maker Studio (Wood workshop)', capacity: 8, floor: 0, amenities: ['Saws', 'Workbenches'], image: '🪵' },
-    { id: 'r11', name: 'Maker Studio (Metal Workshop)', capacity: 8, floor: 0, amenities: ['Welding', 'Lathe'], image: '⚙️' },
-    { id: 'r12', name: 'Creative Studio (Photography/Videography)', capacity: 6, floor: 2, amenities: ['Cameras', 'Lights', 'Green Screen'], image: '📸' },
-    { id: 'r13', name: 'Creative Studio (Music)', capacity: 4, floor: 2, amenities: ['Instruments', 'DAW', 'Sound Proof'], image: '🎵' },
-    { id: 'r14', name: 'Admin Office', capacity: 6, floor: 1, amenities: ['Desks', 'Printer', 'Safe'], image: '💼' },
+    { id: 'r1', name: 'Cafe and lounge', capacity: 20, floor: 0, amenities: ['Coffee', 'Wi-Fi', 'Lounge Chairs'], image: '', hourly_rate: 0 },
+    { id: 'r2', name: 'Server room', capacity: 2, floor: 0, amenities: ['AC', 'Racks', 'Security'], image: '', hourly_rate: 0 },
+    { id: 'r3', name: 'Colab Room Left (Co-working space)', capacity: 15, floor: 1, amenities: ['Wi-Fi', 'Hot Desks'], image: '', hourly_rate: 0 },
+    { id: 'r4', name: 'Design studio', capacity: 8, floor: 1, amenities: ['Drawing Tablets', 'iMacs'], image: '', hourly_rate: 0 },
+    { id: 'r5', name: 'Rapid Prototype Studio', capacity: 10, floor: 1, amenities: ['3D Printers', 'Laser Cutter'], image: '', hourly_rate: 0 },
+    { id: 'r6', name: 'Food and agritech lab', capacity: 12, floor: 0, amenities: ['Lab Benches', 'Sensors'], image: '', hourly_rate: 0 },
+    { id: 'r7', name: 'Tech Transfer Office', capacity: 4, floor: 1, amenities: ['Meeting Table', 'Storage'], image: '', hourly_rate: 0 },
+    { id: 'r8', name: 'Pitch Garage', capacity: 40, floor: 0, amenities: ['Stage', 'Projector', 'Sound System'], image: '', hourly_rate: 0 },
+    { id: 'r9', name: 'Colab Room Right (Co-working space)', capacity: 15, floor: 1, amenities: ['Wi-Fi', 'Hot Desks'], image: '', hourly_rate: 0 },
+    { id: 'r10', name: 'Maker Studio (Wood workshop)', capacity: 8, floor: 0, amenities: ['Saws', 'Workbenches'], image: '', hourly_rate: 0 },
+    { id: 'r11', name: 'Maker Studio (Metal Workshop)', capacity: 8, floor: 0, amenities: ['Welding', 'Lathe'], image: '', hourly_rate: 0 },
+    { id: 'r12', name: 'Creative Studio (Photography/Videography)', capacity: 6, floor: 2, amenities: ['Cameras', 'Lights', 'Green Screen'], image: '', hourly_rate: 0 },
+    { id: 'r13', name: 'Creative Studio (Music)', capacity: 4, floor: 2, amenities: ['Instruments', 'DAW', 'Sound Proof'], image: '', hourly_rate: 0 },
+    { id: 'r14', name: 'Admin Office', capacity: 6, floor: 1, amenities: ['Desks', 'Printer', 'Safe'], image: '', hourly_rate: 0 },
 ];
 
 export const EQUIPMENT = [
-    { id: 'e1', name: '3D Printer - Prusa', available: true, image: '🖨️' },
-    { id: 'e2', name: 'Laser Cutter', available: true, image: '✂️' },
-    { id: 'e3', name: 'VR Headset - Meta Quest', available: true, image: '🥽' },
-    { id: 'e4', name: 'Drone - DJI Mini', available: false, image: '🚁' },
-    { id: 'e5', name: 'Camera - Sony A7IV', available: true, image: '📷' },
-    { id: 'e6', name: 'Portable Projector', available: true, image: '📽️' },
-    { id: 'e7', name: 'Soldering Station', available: true, image: '🔌' },
-    { id: 'e8', name: 'Oscilloscope', available: true, image: '📊' },
+    { id: 'e1', name: '3D Printer - Prusa', available: true, image: '' },
+    { id: 'e2', name: 'Laser Cutter', available: true, image: '' },
+    { id: 'e3', name: 'VR Headset - Meta Quest', available: true, image: '' },
+    { id: 'e4', name: 'Drone - DJI Mini', available: false, image: '' },
+    { id: 'e5', name: 'Camera - Sony A7IV', available: true, image: '' },
+    { id: 'e6', name: 'Portable Projector', available: true, image: '' },
+    { id: 'e7', name: 'Soldering Station', available: true, image: '' },
+    { id: 'e8', name: 'Oscilloscope', available: true, image: '' },
 ];
 
 const firstNames = ['Alex', 'Jordan', 'Morgan', 'Taylor', 'Casey', 'Quinn', 'Avery', 'Riley', 'Cameron', 'Dakota', 'Emery', 'Finley', 'Harper', 'Jamie', 'Kendall', 'Logan', 'Marley', 'Nico', 'Oakley', 'Parker', 'Reese', 'Sage', 'Skyler', 'Toby'];
@@ -104,7 +104,7 @@ export function generateMockNotifications() {
     return [
         { id: 'n1', type: 'warning', title: 'Membership Expiring', message: 'Your Pro membership expires in 5 days. Renew now to keep access.', time: new Date(Date.now() - 3600000).toISOString(), read: false },
         { id: 'n2', type: 'info', title: 'Booking Reminder', message: 'You have a booking for Innovation Lab A tomorrow at 10:00 AM.', time: new Date(Date.now() - 7200000).toISOString(), read: false },
-        { id: 'n3', type: 'success', title: 'Payment Received', message: 'Your payment of $79.00 for Pro tier has been processed.', time: new Date(Date.now() - 86400000).toISOString(), read: true },
+        { id: 'n3', type: 'success', title: 'Payment Received', message: 'Your payment of ₦79.00 for Pro tier has been processed.', time: new Date(Date.now() - 86400000).toISOString(), read: true },
         { id: 'n4', type: 'error', title: 'Access Denied', message: 'An access attempt with your credentials was denied at Main Entrance.', time: new Date(Date.now() - 172800000).toISOString(), read: true },
         { id: 'n5', type: 'info', title: 'New Equipment Available', message: 'A new Oscilloscope has been added to the equipment library.', time: new Date(Date.now() - 259200000).toISOString(), read: true },
         { id: 'n6', type: 'success', title: 'Visitor Arrived', message: 'Your visitor Jane Doe has arrived at the front desk.', time: new Date(Date.now() - 345600000).toISOString(), read: true },

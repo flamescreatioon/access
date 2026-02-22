@@ -54,7 +54,8 @@ const onboardingMiddleware = async (req, res, next) => {
             '/api/v1/onboarding/complete',
             '/api/v1/onboarding/confirm-details',
             '/api/v1/onboarding/select-role',
-            '/api/v1/onboarding/confirm-payment-contact'
+            '/api/v1/onboarding/confirm-payment-contact',
+            '/api/v1/access'
         ];
 
         // Normalize path for comparison - handle query params and trailing slashes

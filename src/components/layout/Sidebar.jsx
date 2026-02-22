@@ -24,7 +24,7 @@ const hubManagerNav = [
     { to: '/scanner', label: 'Scanner', icon: ScanLine },
     { to: '/scan-history', label: 'Scan History', icon: History },
     { to: '/device-setup', label: 'Device Setup', icon: Smartphone },
-    { to: '/members', label: 'Members', icon: Users },
+    { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/logs', label: 'Logs', icon: Activity },
     { to: '/spaces', label: 'Spaces', icon: Building },
     { to: '/equipment', label: 'Equipment', icon: Wrench },
@@ -36,7 +36,6 @@ const hubManagerNav = [
 const adminNav = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/scanner', label: 'Scanner', icon: ScanLine },
-    { to: '/members', label: 'Members', icon: Users },
     { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/access-rules', label: 'Access Rules', icon: Shield },
     { to: '/logs', label: 'Logs', icon: Activity },

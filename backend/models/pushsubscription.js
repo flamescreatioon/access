@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      PushSubscription.belongsTo(models.User, { foreignKey: 'user_id' });
+      PushSubscription.belongsTo(models.User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
     }
   }
   PushSubscription.init({

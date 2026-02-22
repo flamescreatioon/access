@@ -103,50 +103,52 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const load = async () => {
+        const initializeDashboard = async () => {
             setLoading(true);
+            try {
+                // 1. Fetch onboarding status and sync user state
+                const statusData = await fetchOnboardingStatus();
 
-            // Core data needed for onboarding/status
-            const status = await fetchOnboardingStatus();
-            if (status?.user) {
-                const { updateUser } = useAuthStore.getState();
-                updateUser(status.user);
-            }
-            await fetchNotifications();
-
-            // Only fetch restricted data if user is fully active
-            // Note: fetchOnboardingStatus must complete first to know activation status
-        };
-        if (user) load();
-    }, [user, isAdmin]);
-
-    useEffect(() => {
-        const loadActiveData = async () => {
-            if (onboardingStatus?.activationStatus === 'ACTIVE') {
-                const tasks = [fetchBookings()];
-
-                // Only admins and security can fetch logs
-                if (isAdmin || isSecurity) {
-                    tasks.push(fetchLogs());
+                if (statusData?.user) {
+                    const { updateUser, user: currentUser } = useAuthStore.getState();
+                    // Sync if local state is stale
+                    if (currentUser?.activation_status !== statusData.user.activation_status ||
+                        currentUser?.first_login_required !== statusData.user.first_login_required) {
+                        updateUser(statusData.user);
+                    }
                 }
 
-                // Admins/Managers fetch all members, members fetch their own
-                if (isAdmin) {
-                    tasks.push(fetchAllMembers());
-                } else if (user?.id) {
-                    tasks.push(fetchCurrentMembership(user.id));
-                }
+                // 2. Fetch Notifications (always safe)
+                await fetchNotifications();
 
-                await Promise.all(tasks);
-                setLoading(false);
-            } else if (onboardingStatus) {
-                // If not active, we still need membership info to check payment status in some cases
-                // but let's keep it simple for now as SetupTracker handles its own logic
+                // 3. If fully active, fetch the rest of the business data
+                const isActuallyActive = (statusData?.activationStatus || user?.activation_status) === 'ACTIVE';
+                if (isActuallyActive) {
+                    const tasks = [fetchBookings()];
+
+                    if (isAdmin || isSecurity) {
+                        tasks.push(fetchLogs());
+                    }
+
+                    if (isAdmin) {
+                        tasks.push(fetchAllMembers());
+                    } else if (user?.id) {
+                        tasks.push(fetchCurrentMembership(user.id));
+                    }
+
+                    await Promise.all(tasks);
+                }
+            } catch (err) {
+                console.error("Dashboard initialization error:", err);
+            } finally {
                 setLoading(false);
             }
         };
-        loadActiveData();
-    }, [onboardingStatus, isAdmin, user?.id]);
+
+        if (user?.id) {
+            initializeDashboard();
+        }
+    }, [user?.id, isAdmin, isSecurity]);
 
     if (loading) {
         return (
@@ -158,7 +160,8 @@ export default function DashboardPage() {
     }
 
     const unread = unreadCount;
-    const isFullyActive = onboardingStatus?.activationStatus === 'ACTIVE';
+    // Use onboardingStatus as primary, user state as secondary
+    const isFullyActive = (onboardingStatus?.activationStatus || user?.activation_status) === 'ACTIVE';
 
     if (!isFullyActive && onboardingStatus) {
         return (
@@ -192,12 +195,23 @@ export default function DashboardPage() {
     /* ───── Member UI ───── */
     if (!isAdmin) {
         const tier = currentMembership?.AccessTier;
+
+        // Show placeholder if we're active but membership hasn't loaded yet
+        if (isFullyActive && !currentMembership && useMembershipStore.getState().isLoading) {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-[50vh]">
+                    <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-surface-400">Loading Passport...</p>
+                </div>
+            );
+        }
+
         return (
             <div className="space-y-6 page-enter page-enter-active">
                 <header className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl md:text-4xl font-black tracking-tight">
-                            Hey, {user?.name?.split(' ')[0]}! <span className="inline-block animate-bounce-slow">👋</span>
+                            Hey, {user?.name?.split(' ')[0]}!
                         </h1>
                         <p className="text-surface-500 mt-1 font-medium">Your creative hub is ready for you.</p>
                     </div>

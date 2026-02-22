@@ -146,7 +146,7 @@ export default function EquipmentModal({ open, data, categories, tiers, onClose,
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-xs font-black uppercase text-surface-500 ml-1">Hourly Cost ($)</label>
+                            <label className="text-xs font-black uppercase text-surface-500 ml-1">Hourly Cost (₦)</label>
                             <div className="relative">
                                 <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                                 <input

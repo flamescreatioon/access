@@ -318,9 +318,25 @@ const OnboardingSetup = () => {
                         <p className="text-surface-500 font-medium mb-10 max-w-sm mx-auto">
                             Your account is now fully activated. You can now book spaces, access equipment, and use all hub facilities.
                         </p>
-                        <button onClick={() => navigate('/dashboard')}
-                            className="w-full py-4 bg-success-500 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-success-500/20">
-                            Enter Dashboard 🚀
+                        <button onClick={async () => {
+                            setLoading(true);
+                            try {
+                                const data = await fetchStatus();
+                                if (data?.user) {
+                                    const { updateUser } = useAuthStore.getState();
+                                    updateUser(data.user);
+                                }
+                                // Immediate navigation - App.jsx guard will now allow it
+                                setLoading(false);
+                                navigate('/dashboard');
+                            } catch (err) {
+                                setLoading(false);
+                                navigate('/dashboard');
+                            }
+                        }}
+                            disabled={loading}
+                            className="w-full py-4 bg-success-500 text-white rounded-2xl font-black uppercase tracking-widest text-sm shadow-lg shadow-success-500/20 disabled:opacity-50">
+                            {loading ? 'Entering...' : 'Enter Dashboard'}
                         </button>
                     </div>
                 );

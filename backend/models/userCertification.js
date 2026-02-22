@@ -4,8 +4,8 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
     class UserCertification extends Model {
         static associate(models) {
-            UserCertification.belongsTo(models.User, { foreignKey: 'user_id' });
-            UserCertification.belongsTo(models.User, { foreignKey: 'certified_by', as: 'Certifier' });
+            UserCertification.belongsTo(models.User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+            UserCertification.belongsTo(models.User, { foreignKey: 'certified_by', as: 'Certifier', onDelete: 'SET NULL' });
         }
     }
     UserCertification.init({

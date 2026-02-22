@@ -6,14 +6,21 @@ exports.generateToken = async (req, res) => {
     try {
         const user = req.user; // From authMiddleware
 
-        // Verify user has active membership
+        // Verify user has active membership, but allow Admins/Hub Managers
+        const isAdmin = user.role === 'Admin' || user.role === 'Hub Manager';
+        let tierName = 'Basic';
+
         const membership = await Membership.findOne({
-            where: { user_id: user.id },
+            where: { user_id: user.id, status: 'Active' },
             include: [AccessTier]
         });
 
-        if (!membership || membership.status !== 'Active') {
+        if (membership) {
+            tierName = membership.AccessTier.name;
+        } else if (!isAdmin) {
             return res.status(403).json({ message: 'Active membership required to generate access token' });
+        } else {
+            tierName = 'Management'; // Default staff tier
         }
 
         // Generate short-lived token (e.g., 60 seconds)
@@ -21,7 +28,7 @@ exports.generateToken = async (req, res) => {
             {
                 userId: user.id,
                 role: user.role,
-                tier: membership.AccessTier.name,
+                tier: tierName,
                 timestamp: Date.now()
             },
             process.env.JWT_SECRET, // Using same secret for now, ideally separate

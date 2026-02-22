@@ -22,7 +22,7 @@ const hmPrimary = [
     { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
     { to: '/scanner', label: 'Scanner', icon: ScanLine },
     { to: '/scan-history', label: 'History', icon: History },
-    { to: '/members', label: 'Members', icon: Users },
+    { to: '/users', label: 'Users', icon: UserPlus },
 ];
 const hmMore = [
     { to: '/device-setup', label: 'Device Setup', icon: Smartphone },
@@ -39,11 +39,10 @@ const hmMore = [
 const adminPrimary = [
     { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
     { to: '/scanner', label: 'Scanner', icon: ScanLine },
-    { to: '/members', label: 'Members', icon: Users },
+    { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/logs', label: 'Logs', icon: Activity },
 ];
 const adminMore = [
-    { to: '/users', label: 'Users', icon: UserPlus },
     { to: '/access-rules', label: 'Access Rules', icon: Shield },
     { to: '/devices', label: 'Devices', icon: MonitorSmartphone },
     { to: '/notifications', label: 'Notifications', icon: Bell },

@@ -5,8 +5,9 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class AccessLog extends Model {
     static associate(models) {
-      AccessLog.belongsTo(models.User, { foreignKey: 'user_id' });
+      AccessLog.belongsTo(models.User, { foreignKey: 'user_id', onDelete: 'CASCADE' });
       AccessLog.belongsTo(models.Device, { foreignKey: 'device_id' });
+      AccessLog.belongsTo(models.User, { foreignKey: 'manager_id', as: 'Manager', onDelete: 'SET NULL' });
     }
   }
   AccessLog.init({

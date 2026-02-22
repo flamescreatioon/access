@@ -77,11 +77,11 @@ export default function SpaceDetail() {
         setShowConfirm(false);
 
         if (result.success) {
-            showToast('✅ Booking confirmed!');
+            showToast('Booking confirmed!');
             setSelectedSlots([]);
             fetchAvailability(id, selectedDate);
         } else {
-            showToast(`❌ ${result.error}`);
+            showToast(result.error);
         }
     };
 
@@ -140,7 +140,7 @@ export default function SpaceDetail() {
                             <div className="text-right">
                                 <div className="text-2xl font-bold">
                                     {parseFloat(currentSpace.hourly_rate) > 0
-                                        ? <>${currentSpace.hourly_rate}<span className="text-sm font-normal text-surface-500">/hr</span></>
+                                        ? <>₦{currentSpace.hourly_rate}<span className="text-sm font-normal text-surface-500">/hr</span></>
                                         : <span className="text-success-500">Free</span>}
                                 </div>
                             </div>
@@ -256,7 +256,7 @@ export default function SpaceDetail() {
                                 </div>
                                 <div className="text-right">
                                     {parseFloat(currentSpace.hourly_rate) > 0 && (
-                                        <p className="text-lg font-bold">${(parseFloat(currentSpace.hourly_rate) * selectedSlots.length).toFixed(2)}</p>
+                                        <p className="text-lg font-bold">₦{(parseFloat(currentSpace.hourly_rate) * selectedSlots.length).toFixed(2)}</p>
                                     )}
                                 </div>
                             </div>
@@ -281,9 +281,9 @@ export default function SpaceDetail() {
                             <div className="flex justify-between"><span className="text-surface-500">Time</span><span className="font-medium">{Math.min(...selectedSlots)}:00 – {Math.max(...selectedSlots) + 1}:00</span></div>
                             <div className="flex justify-between"><span className="text-surface-500">Duration</span><span className="font-medium">{selectedSlots.length} hour{selectedSlots.length > 1 ? 's' : ''}</span></div>
                             {parseFloat(currentSpace.hourly_rate) > 0 && (
-                                <div className="flex justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
+                                <div className="justify-between pt-2 border-t border-surface-200 dark:border-surface-700 flex">
                                     <span className="font-semibold">Total</span>
-                                    <span className="font-bold text-primary-500">${(parseFloat(currentSpace.hourly_rate) * selectedSlots.length).toFixed(2)}</span>
+                                    <span className="font-bold text-primary-500">₦{(parseFloat(currentSpace.hourly_rate) * selectedSlots.length).toFixed(2)}</span>
                                 </div>
                             )}
                         </div>

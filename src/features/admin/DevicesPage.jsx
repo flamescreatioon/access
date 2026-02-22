@@ -289,7 +289,7 @@ export default function DevicesPage() {
             {/* Toast */}
             {toast && (
                 <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-surface-900 dark:bg-surface-100 text-white dark:text-surface-900 px-6 py-3 rounded-xl shadow-2xl text-sm font-medium animate-in slide-in-from-bottom-4">
-                    ✓ {toast}
+                    Success: {toast}
                 </div>
             )}
         </div>

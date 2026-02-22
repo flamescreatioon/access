@@ -164,7 +164,7 @@ export default function ScannerPage() {
 
         // Check for secure context (HTTPS) — CRITICAL for mobile camera access
         if (!window.isSecureContext && window.location.hostname !== 'localhost') {
-            showToast('❌ Error: Camera requires HTTPS for mobile access');
+            showToast('Error: Camera requires HTTPS for mobile access');
             console.error('Insecure context: Browser will block camera access.');
         }
 
@@ -175,15 +175,15 @@ export default function ScannerPage() {
         }
 
         try {
-            showToast('⏳ Loading scanner library...');
+            showToast('Loading scanner library...');
             const { Html5Qrcode } = await import('html5-qrcode');
 
-            showToast('🔍 Searching for cameras...');
+            showToast('Searching for cameras...');
             const scanner = new Html5Qrcode('scanner-viewport');
             html5QrRef.current = scanner;
 
             const onScanSuccess = (decodedText) => {
-                showToast('🎯 Code detected! Validating...');
+                showToast('Code detected! Validating...');
                 if (handleScanRef.current) handleScanRef.current(decodedText);
             };
 
@@ -197,7 +197,7 @@ export default function ScannerPage() {
                 aspectRatio: 1.0,
             };
 
-            showToast('📸 Requesting camera access...');
+            showToast('Requesting camera access...');
             try {
                 // Try rear camera first (mobile)
                 await scanner.start(
@@ -208,7 +208,7 @@ export default function ScannerPage() {
                         // Ignored scan hints
                     }
                 );
-                showToast('✅ Camera active');
+                showToast('Camera active');
             } catch (rearCamError) {
                 console.warn('Rear camera failed, trying fallback...', rearCamError);
                 // Fallback: use any available camera (desktop webcam)
@@ -218,7 +218,7 @@ export default function ScannerPage() {
                     onScanSuccess,
                     () => { }
                 );
-                showToast('✅ Camera active (fallback)');
+                showToast('Camera active (fallback)');
             }
 
             setScanning(true);
@@ -226,11 +226,11 @@ export default function ScannerPage() {
             console.error('Detailed camera error:', error);
             const errorMsg = error.message || 'unknown error';
             if (errorMsg.includes('Permission')) {
-                showToast('🚫 Camera permission denied');
+                showToast('Camera permission denied');
             } else if (errorMsg.includes('NotFound')) {
-                showToast('❓ No camera found on this device');
+                showToast('No camera found on this device');
             } else {
-                showToast(`❌ Camera error: ${errorMsg}`);
+                showToast(`Camera error: ${errorMsg}`);
             }
             html5QrRef.current = null;
         } finally {
@@ -311,7 +311,7 @@ export default function ScannerPage() {
                 scan_id: scanResult.scan_id,
                 decision,
             });
-            showToast(decision === 'GRANT' ? '✅ Entry granted' : '🚫 Entry denied');
+            showToast(decision === 'GRANT' ? 'Entry granted' : 'Entry denied');
         } catch (error) {
             showToast('Failed to log decision');
         } finally {
@@ -324,14 +324,14 @@ export default function ScannerPage() {
 
     // Handle mass checkout
     const handleClearHub = async () => {
-        if (!window.confirm('⚠️ Are you sure you want to checkout EVERYONE in the hub? This will reset all active sessions.')) return;
+        if (!window.confirm('Are you sure you want to checkout EVERYONE in the hub? This will reset all active sessions.')) return;
 
         setClearingHub(true);
         try {
             const res = await api.post('/scan/checkout-all');
-            showToast(`✅ ${res.data.message}`);
+            showToast(res.data.message);
         } catch (error) {
-            showToast('❌ Failed to clear hub');
+            showToast('Failed to clear hub');
         } finally {
             setClearingHub(false);
         }

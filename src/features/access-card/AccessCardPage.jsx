@@ -214,15 +214,15 @@ export default function AccessCardPage() {
                             {/* Manual Access Code Section */}
                             {manualCode && (
                                 <div className="mt-8 flex flex-col items-center">
-                                    <p className="text-white/50 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Manual Entry Code</p>
+                                    <p className="text-surface-400 dark:text-white/50 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Manual Entry Code</p>
                                     <div className="flex gap-2">
                                         {manualCode.split('').map((char, i) => (
-                                            <div key={i} className="w-10 h-12 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 flex items-center justify-center text-white text-xl font-black shadow-lg">
+                                            <div key={i} className="w-10 h-12 bg-surface-100 dark:bg-white/10 backdrop-blur-md rounded-xl border border-surface-200 dark:border-white/20 flex items-center justify-center text-surface-900 dark:text-white text-xl font-black shadow-lg">
                                                 {char}
                                             </div>
                                         ))}
                                     </div>
-                                    <p className="text-white/30 text-[9px] mt-3 font-medium uppercase tracking-widest text-center px-4">
+                                    <p className="text-surface-400 dark:text-white/30 text-[9px] mt-3 font-medium uppercase tracking-widest text-center px-4">
                                         Type this if camera scan fails
                                     </p>
                                 </div>

@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class RejectedAccount extends Model {
         static associate(models) {
             // Potentially associate with the admin who rejected (rejected_by)
-            RejectedAccount.belongsTo(models.User, { foreignKey: 'rejected_by', as: 'Admin' });
+            RejectedAccount.belongsTo(models.User, { foreignKey: 'rejected_by', as: 'Admin', onDelete: 'SET NULL' });
         }
     }
     RejectedAccount.init({

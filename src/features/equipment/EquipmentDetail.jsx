@@ -78,11 +78,11 @@ export default function EquipmentDetail() {
         setShowConfirm(false);
 
         if (result.success) {
-            showToast('✅ Equipment booked!');
+            showToast('Equipment booked!');
             setSelectedSlots([]);
             fetchAvailability(id, selectedDate);
         } else {
-            showToast(`❌ ${result.error}`);
+            showToast(result.error);
         }
     };
 
@@ -162,7 +162,7 @@ export default function EquipmentDetail() {
                                 <span className="flex items-center gap-1.5"><Timer className="w-4 h-4 text-primary-500/60" /> Max {currentEquipment.max_session_hours}hrs/session</span>
                                 {parseFloat(currentEquipment.hourly_cost) > 0 && (
                                     <span className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 font-bold">
-                                        <Zap className="w-4 h-4 fill-current" /> ${currentEquipment.hourly_cost}/hr
+                                        <Zap className="w-4 h-4 fill-current" /> ₦{currentEquipment.hourly_cost}/hr
                                     </span>
                                 )}
                             </div>
@@ -272,7 +272,7 @@ export default function EquipmentDetail() {
                                         <h4 className="font-bold text-lg">
                                             {format(new Date(selectedDate), 'MMMM d')} at {Math.min(...selectedSlots)}:00
                                         </h4>
-                                        <p className="text-xs text-surface-500 font-medium">{selectedSlots.length} hour session · Total: ${(parseFloat(currentEquipment.hourly_cost) * selectedSlots.length).toFixed(2)}</p>
+                                        <p className="text-xs text-surface-500 font-medium">{selectedSlots.length} hour session · Total: ₦{(parseFloat(currentEquipment.hourly_cost) * selectedSlots.length).toFixed(2)}</p>
                                     </div>
                                     <button onClick={() => setShowConfirm(true)}
                                         className="px-8 py-3.5 bg-primary-500 text-white rounded-2xl font-black text-sm hover:bg-primary-600 shadow-xl shadow-primary-500/30 transition-all flex items-center gap-2">
@@ -310,7 +310,7 @@ export default function EquipmentDetail() {
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold pt-3 border-t border-surface-200 dark:border-surface-700">
                                 <span className="text-surface-900 dark:text-surface-100">Total Price</span>
-                                <span className="text-primary-500 font-black text-lg">${(parseFloat(currentEquipment.hourly_cost) * selectedSlots.length).toFixed(2)}</span>
+                                <span className="text-primary-500 font-black text-lg">₦{(parseFloat(currentEquipment.hourly_cost) * selectedSlots.length).toFixed(2)}</span>
                             </div>
                         </div>
 

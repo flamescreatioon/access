@@ -66,6 +66,21 @@ exports.getOnboardingStatus = async (req, res) => {
         }
 
         res.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                department: user.department,
+                level: user.level,
+                account_status: user.account_status,
+                onboarding_status: user.onboarding_status,
+                activation_status: user.activation_status,
+                payment_status: user.payment_status,
+                first_login_required: user.first_login_required,
+                profile_complete: user.profile_complete,
+                phone: user.phone
+            },
             role: user.role,
             department: user.department,
             level: user.level,
@@ -205,7 +220,7 @@ exports.adminApprove = async (req, res) => {
         // Handle Membership
         let finalTierId = tier_id;
 
-        // If tier_id not provided, check for a pending membership
+        // If tier_id not provided, check for a pending membership or use default for students
         if (!finalTierId) {
             const pendingMembership = await Membership.findOne({
                 where: { user_id: userId, status: 'Pending' }
@@ -216,13 +231,34 @@ exports.adminApprove = async (req, res) => {
                     status: 'Active',
                     payment_status: 'PAID'
                 });
+            } else if (user.role === 'Student') {
+                // Automatic assignment for students if no pending membership found
+                const studentTier = await AccessTier.findOne({ where: { name: 'Student Club Tier' } });
+                if (studentTier) {
+                    finalTierId = studentTier.id;
+                }
             }
-        } else {
-            // Deactivate existing memberships for this user
+
+            // Absolute fallback: assign Free tier if still nothing
+            if (!finalTierId) {
+                const freeTier = await AccessTier.findOne({ where: { name: 'Free tier' } });
+                if (freeTier) finalTierId = freeTier.id;
+            }
+        }
+
+        if (finalTierId) {
+            // Deactivate existing memberships for this user to prevent duplicates surfacing in the join
             await Membership.update({ status: 'Inactive' }, { where: { user_id: userId } });
 
+            const tier = await AccessTier.findByPk(finalTierId);
             const expiryDate = new Date();
-            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+            if (tier && tier.period === 'monthly') {
+                expiryDate.setMonth(expiryDate.getMonth() + 1);
+            } else {
+                // Default to yearly for others
+                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            }
 
             await Membership.create({
                 user_id: user.id,

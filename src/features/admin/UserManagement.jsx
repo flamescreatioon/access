@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import { useMembershipStore } from '../../stores/membershipStore';
 
 const roleStyles = {
     'Admin': 'bg-danger-500/10 text-danger-600 dark:text-danger-400',
@@ -32,6 +33,7 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
     const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedTierId, setSelectedTierId] = useState(null);
+    const { suspendMember, reactivateMember, updateMemberTier } = useMembershipStore();
 
     useEffect(() => {
         if (user?.id) {
@@ -75,7 +77,7 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
     };
 
     const handleDelete = async () => {
-        if (!window.confirm(`⚠️ Permanently delete ${user.name}? This cannot be undone.`)) return;
+        if (!window.confirm(`Permanently delete ${user.name}? This cannot be undone.`)) return;
 
         try {
             await api.delete(`/users/${user.id}`);
@@ -84,6 +86,38 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
             onRefresh?.();
         } catch (err) {
             toast.error('Failed to delete user');
+        }
+    };
+
+    const handleSuspend = async (membershipId) => {
+        try {
+            await suspendMember(membershipId);
+            toast.success('Membership suspended');
+            onRefresh?.();
+            onClose(); // Close and refresh
+        } catch (err) {
+            toast.error('Failed to suspend');
+        }
+    };
+
+    const handleReactivate = async (membershipId) => {
+        try {
+            await reactivateMember(membershipId);
+            toast.success('Membership reactivated');
+            onRefresh?.();
+            onClose();
+        } catch (err) {
+            toast.error('Failed to reactivate');
+        }
+    };
+
+    const handleTierUpdate = async (membershipId, tierId) => {
+        try {
+            await updateMemberTier(membershipId, tierId);
+            toast.success('Tier updated successfully');
+            onRefresh?.();
+        } catch (err) {
+            toast.error('Failed to update tier');
         }
     };
 
@@ -206,6 +240,37 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
                                             className="w-full py-2.5 rounded-xl bg-primary-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary-600 transition-all disabled:opacity-50">
                                             <CheckCircle2 className="w-4 h-4" /> Force Activate
                                         </button>
+                                    </div>
+                                )}
+
+                                {/* Membership Management for Active Users */}
+                                {detail?.activation_status === 'ACTIVE' && detail.Memberships?.[0] && (
+                                    <div className="pt-4 border-t border-surface-100 dark:border-surface-700 space-y-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1.5">Manage Membership Plan</label>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={detail.Memberships[0].tier_id}
+                                                    onChange={(e) => handleTierUpdate(detail.Memberships[0].id, parseInt(e.target.value))}
+                                                    className="flex-1 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-900 border-none text-xs font-semibold focus:ring-1 focus:ring-primary-500 transition-all"
+                                                >
+                                                    {tiers.map(t => (
+                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                    ))}
+                                                </select>
+                                                {detail.Memberships[0].status === 'Suspended' ? (
+                                                    <button onClick={() => handleReactivate(detail.Memberships[0].id)}
+                                                        className="px-4 py-2 rounded-lg bg-success-500/10 text-success-600 text-xs font-bold hover:bg-success-500/20 transition-all">
+                                                        Reactivate
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => handleSuspend(detail.Memberships[0].id)}
+                                                        className="px-4 py-2 rounded-lg bg-warning-500/10 text-warning-600 text-xs font-bold hover:bg-warning-500/20 transition-all">
+                                                        Suspend
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -435,6 +500,8 @@ export default function UserManagement() {
         if (filter === 'awaiting') return matchSearch && u.payment_status === 'AWAITING_ADMIN_CONFIRMATION';
         if (filter === 'active') return matchSearch && u.activation_status === 'ACTIVE';
         if (filter === 'inactive') return matchSearch && u.activation_status !== 'ACTIVE';
+        if (filter === 'suspended') return matchSearch && u.Memberships?.[0]?.status === 'Suspended';
+        if (filter === 'active-members') return matchSearch && u.Memberships?.[0]?.status === 'Active';
         if (filter === 'lecturers') return matchSearch && u.role === 'Lecturer';
         return matchSearch && u.role === filter;
     });
@@ -541,11 +608,13 @@ export default function UserManagement() {
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
                     {[
                         { key: 'all', label: 'All' },
-                        { key: 'awaiting', label: '⏳ Awaiting' },
-                        { key: 'active', label: 'Active' },
+                        { key: 'active-members', label: 'Members' },
+                        { key: 'suspended', label: 'Suspended' },
+                        { key: 'awaiting', label: 'Awaiting' },
+                        { key: 'active', label: 'Active Users' },
                         { key: 'inactive', label: 'Inactive' },
                         { key: 'lecturers', label: 'Lecturers' },
-                        { key: 'rejected', label: '🚫 Rejected' },
+                        { key: 'rejected', label: 'Rejected' },
                     ].map(f => (
                         <button key={f.key} onClick={() => setFilter(f.key)}
                             className={`px-3 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap
@@ -617,6 +686,11 @@ export default function UserManagement() {
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${paymentStatusStyles[user.payment_status] || ''}`}>
                                             {user.payment_status?.replace(/_/g, ' ') || '—'}
                                         </span>
+                                        {user.Memberships?.[0]?.status === 'Suspended' && (
+                                            <span className="px-2.5 py-1 rounded-full text-xs font-black bg-warning-500 text-white uppercase animate-pulse">
+                                                Suspended
+                                            </span>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -639,13 +713,13 @@ export default function UserManagement() {
 
                             {/* Quick Actions for Awaiting */}
                             {isAwaiting && (
-                                <div className="flex gap-2 mt-3 pt-3 border-t border-surface-100 dark:border-surface-700">
+                                <div className="flex gap-2 mt-4 pt-4 border-t border-surface-200/50 dark:border-surface-700/50 relative z-10" onClick={(e) => e.stopPropagation()}>
                                     <button onClick={(e) => handleQuickApprove(user.id, e)}
-                                        className="flex-1 py-2 rounded-xl bg-success-500 text-white text-xs font-bold flex items-center justify-center gap-1 hover:bg-success-600 transition-all">
+                                        className="flex-1 py-2.5 rounded-xl bg-success-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-success-600 active:scale-95 transition-all shadow-sm">
                                         <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                                     </button>
                                     <button onClick={(e) => handleQuickReject(user.id, e)}
-                                        className="flex-1 py-2 rounded-xl bg-danger-500/10 text-danger-500 text-xs font-bold flex items-center justify-center gap-1 hover:bg-danger-500/20 transition-all">
+                                        className="flex-1 py-2.5 rounded-xl bg-danger-500/10 text-danger-500 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-danger-500/20 active:scale-95 transition-all">
                                         <XCircle className="w-3.5 h-3.5" /> Reject
                                     </button>
                                 </div>

@@ -35,7 +35,9 @@ function AppRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
-  const isInactive = user && (user.activation_status !== 'ACTIVE' || user.first_login_required);
+  const isInactive = user &&
+    !isAdmin &&
+    (user.activation_status && user.activation_status !== 'ACTIVE' || user.first_login_required);
 
   useEffect(() => {
     if (isAuthenticated && isInactive) {
@@ -69,12 +71,8 @@ function AppRoutes() {
         <Route path="/activity" element={<LogsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
 
-        {/* Admin routes */}
-        <Route path="/members" element={
-          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
-            <AdminMemberList />
-          </AuthGuard>
-        } />
+        {/* Admin routes - Consolidated */}
+        <Route path="/members" element={<Navigate to="/users" replace />} />
         <Route path="/logs" element={
           <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER, ROLES.SECURITY]}>
             <LogsPage />

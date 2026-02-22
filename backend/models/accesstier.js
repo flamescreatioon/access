@@ -36,6 +36,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    period: {
+      type: DataTypes.ENUM('monthly', 'yearly', 'one-time'),
+      defaultValue: 'yearly',
+    },
   }, {
     sequelize,
     modelName: 'AccessTier',

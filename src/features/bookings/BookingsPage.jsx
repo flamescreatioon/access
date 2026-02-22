@@ -193,16 +193,24 @@ export default function BookingsPage() {
 
     const handleCancel = async (id) => {
         const result = await cancelBooking(id);
-        if (result.success) showToast('✅ Booking cancelled');
-        else showToast(`❌ ${result.error}`);
+        if (result.success) {
+            showToast('Booking cancelled');
+            fetchBookings();
+        } else {
+            showToast(result.error);
+        }
     };
 
-    const handleUpdateStatus = async (id, status, reason = '') => {
-        const result = await updateBookingStatus(id, status, reason);
-        if (result.success) showToast(`✅ Status updated to ${status}`);
-        else showToast(`❌ ${result.error}`);
+    const handleUpdateStatus = async (id, status, notes = '') => {
+        const result = await updateBookingStatus(id, status, notes);
+        if (result.success) {
+            showToast('Booking updated');
+            if (isAdmin) fetchAllBookings(adminFilter);
+            else fetchBookings();
+        } else {
+            showToast(result.error);
+        }
     };
-
     const handleEdit = (booking) => {
         // Implementation for edit modal if needed, otherwise just toast
         showToast('Edit feature coming soon in detailed modal');

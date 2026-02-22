@@ -70,7 +70,7 @@ function EquipmentCard({ item }) {
                 <div className="flex items-center justify-between pt-4 border-t border-surface-100 dark:border-surface-700/50">
                     <div className="flex items-center gap-1.5">
                         {parseFloat(item.hourly_cost) > 0 ? (
-                            <span className="text-sm font-bold text-surface-900 dark:text-surface-100">${item.hourly_cost}<span className="text-[10px] font-normal text-surface-500">/hr</span></span>
+                            <span className="text-sm font-bold text-surface-900 dark:text-surface-100">₦{item.hourly_cost}<span className="text-[10px] font-normal text-surface-500">/hr</span></span>
                         ) : (
                             <span className="text-sm font-bold text-success-500">Free</span>
                         )}

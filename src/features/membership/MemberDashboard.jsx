@@ -120,7 +120,7 @@ export default function MemberDashboard() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
                                         <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Price</p>
-                                        <p className="text-xl font-black">${tier.price}<span className="text-xs opacity-50">/mo</span></p>
+                                        <p className="text-xl font-black">₦{tier.price}<span className="text-xs opacity-50">/mo</span></p>
                                     </div>
                                     <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/5">
                                         <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">Renewal</p>
@@ -228,7 +228,7 @@ export default function MemberDashboard() {
 
                                 <h4 className="font-black text-lg">{t.name}</h4>
                                 <div className="mt-1 flex items-baseline gap-1">
-                                    <span className="text-2xl font-black">${t.price}</span>
+                                    <span className="text-2xl font-black">₦{t.price}</span>
                                     <span className="text-xs font-bold text-surface-400">/mo</span>
                                 </div>
 
@@ -288,7 +288,7 @@ export default function MemberDashboard() {
                                             <span className="font-bold text-sm tracking-tight capitalize">{item.AccessTier?.name}</span>
                                         </div>
                                     </td>
-                                    <td className="py-4 font-black text-sm">${item.AccessTier?.price}</td>
+                                    <td className="py-4 font-black text-sm">₦{item.AccessTier?.price}</td>
                                     <td className="py-4">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${item.status === 'Active' ? 'bg-success-500/10 text-success-600' : 'bg-surface-100 dark:bg-surface-700 text-surface-500'}`}>
                                             {item.status}

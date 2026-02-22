@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { UserPlus, Clock, Trash2, QrCode, Shield, Calendar } from 'lucide-react';
+import { UserPlus, Clock, Trash2, QrCode, Shield, Calendar, User, FileText } from 'lucide-react';
 import { format, formatDistanceToNow, addHours } from 'date-fns';
 
 export default function VisitorManagement() {
@@ -55,16 +55,16 @@ export default function VisitorManagement() {
                         <div key={v.id} className="bg-white dark:bg-surface-800/50 rounded-2xl border border-surface-200 dark:border-surface-700/50 p-5 hover:shadow-lg transition-all">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg
-                    ${isActive ? 'bg-success-100 dark:bg-success-900/20' : 'bg-surface-100 dark:bg-surface-700'}`}>
-                                        👤
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center
+                    ${isActive ? 'bg-success-100 dark:bg-success-900/20 text-success-600' : 'bg-surface-100 dark:bg-surface-700 text-surface-500'}`}>
+                                        <User className="w-6 h-6" />
                                     </div>
                                     <div>
                                         <p className="font-semibold">{v.name}</p>
                                         <p className="text-sm text-surface-500">{v.email}</p>
                                         <div className="flex items-center gap-3 mt-1 text-xs text-surface-400">
-                                            <span>📋 {v.purpose}</span>
-                                            <span>🙋 Host: {v.host}</span>
+                                            <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {v.purpose}</span>
+                                            <span className="flex items-center gap-1"><User className="w-3 h-3" /> Host: {v.host}</span>
                                         </div>
                                     </div>
                                 </div>

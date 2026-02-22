@@ -129,6 +129,7 @@ exports.getEquipmentAvailability = async (req, res) => {
 
 // POST /api/v1/equipment/:id/book — Book equipment
 exports.bookEquipment = async (req, res) => {
+    const t = await Booking.sequelize.transaction();
     try {
         const { id } = req.params;
         const { start_time, end_time, title, notes } = req.body;
@@ -138,16 +139,19 @@ exports.bookEquipment = async (req, res) => {
         const end = new Date(end_time);
 
         if (start >= end) {
+            await t.rollback();
             return res.status(400).json({ message: 'End time must be after start time' });
         }
 
         // 1. Verify equipment exists
-        const equipment = await Equipment.findByPk(id);
+        const equipment = await Equipment.findByPk(id, { transaction: t });
         if (!equipment || !equipment.is_active) {
+            await t.rollback();
             return res.status(404).json({ message: 'Equipment not found or inactive' });
         }
 
         if (equipment.status === 'maintenance') {
+            await t.rollback();
             return res.status(400).json({ message: 'Equipment is currently under maintenance' });
         }
 
@@ -155,14 +159,17 @@ exports.bookEquipment = async (req, res) => {
         if (equipment.min_tier_id) {
             const membership = await Membership.findOne({
                 where: { user_id, status: 'Active' },
-                include: [AccessTier]
+                include: [AccessTier],
+                transaction: t
             });
 
             if (!membership) {
+                await t.rollback();
                 return res.status(403).json({ message: 'No active membership' });
             }
 
             if (membership.tier_id < equipment.min_tier_id) {
+                await t.rollback();
                 return res.status(403).json({ message: `Requires ${equipment.MinTier?.name || 'higher'} tier` });
             }
         }
@@ -174,46 +181,17 @@ exports.bookEquipment = async (req, res) => {
                     user_id,
                     certification_name: equipment.certification_name,
                     expires_at: { [Op.or]: [{ [Op.eq]: null }, { [Op.gt]: new Date() }] }
-                }
+                },
+                transaction: t
             });
 
             if (!cert) {
+                await t.rollback();
                 return res.status(403).json({ message: `Required certification missing: ${equipment.certification_name}` });
             }
         }
 
-        // 4. Check session limits
-        const durationHours = (end - start) / 3600000;
-        if (equipment.max_session_hours > 0 && durationHours > equipment.max_session_hours) {
-            return res.status(400).json({ message: `Max session duration is ${equipment.max_session_hours} hours` });
-        }
-
-        // 5. Check daily limit
-        if (equipment.daily_limit_hours > 0) {
-            const dayStart = new Date(start);
-            dayStart.setHours(0, 0, 0, 0);
-            const dayEnd = new Date(start);
-            dayEnd.setHours(23, 59, 59, 999);
-
-            const dailyBookings = await Booking.findAll({
-                where: {
-                    user_id,
-                    equipment_id: id,
-                    status: { [Op.in]: ['confirmed', 'pending', 'completed'] },
-                    start_time: { [Op.gte]: dayStart, [Op.lte]: dayEnd }
-                }
-            });
-
-            const dailyHours = dailyBookings.reduce((sum, b) => {
-                return sum + (new Date(b.end_time) - new Date(b.start_time)) / 3600000;
-            }, 0);
-
-            if (dailyHours + durationHours > equipment.daily_limit_hours) {
-                return res.status(400).json({ message: `Daily equipment limit reached (${equipment.daily_limit_hours}hrs)` });
-            }
-        }
-
-        // 6. Check for conflicts
+        // 4. Check for conflicts (Double-booking prevention with Transaction)
         const conflict = await Booking.findOne({
             where: {
                 equipment_id: id,
@@ -223,13 +201,23 @@ exports.bookEquipment = async (req, res) => {
                     end_time: { [Op.gt]: start },
                 }],
             },
+            lock: true, // Row-level lock to prevent race conditions
+            transaction: t
         });
 
         if (conflict) {
-            return res.status(409).json({ message: 'Equipment is already booked for this time' });
+            await t.rollback();
+            return res.status(409).json({ message: 'Equipment is already reserved for this time' });
         }
 
-        // 7. Create booking
+        // 5. Check session limits
+        const durationHours = (end - start) / 3600000;
+        if (equipment.max_session_hours > 0 && durationHours > equipment.max_session_hours) {
+            await t.rollback();
+            return res.status(400).json({ message: `Max session duration is ${equipment.max_session_hours} hours` });
+        }
+
+        // 6. Create booking
         const isAdminAction = ['Admin', 'Hub Manager'].includes(req.user.role);
         const initialStatus = isAdminAction ? 'confirmed' : 'pending';
 
@@ -242,7 +230,9 @@ exports.bookEquipment = async (req, res) => {
             start_time: start,
             end_time: end,
             status: initialStatus,
-        });
+        }, { transaction: t });
+
+        await t.commit();
 
         // Trigger notification
         const notificationController = require('./notificationController');
@@ -261,6 +251,7 @@ exports.bookEquipment = async (req, res) => {
 
         res.status(201).json(booking);
     } catch (error) {
+        if (t) await t.rollback();
         console.error('Error in bookEquipment:', error);
         res.status(500).json({ message: 'Error booking equipment', error: error.message });
     }

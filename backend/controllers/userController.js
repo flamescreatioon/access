@@ -104,6 +104,7 @@ exports.getAllUsers = async (req, res) => {
             attributes: { exclude: ['password_hash'] },
             include: [{
                 model: Membership,
+                where: { status: ['Active', 'Suspended', 'Expired'] },
                 include: [AccessTier],
                 required: false,
             }],
@@ -123,7 +124,9 @@ exports.getUserById = async (req, res) => {
             include: [
                 {
                     model: Membership,
+                    where: { status: ['Active', 'Suspended', 'Expired'] },
                     include: [AccessTier],
+                    required: false,
                 },
                 {
                     model: AccessLog,
