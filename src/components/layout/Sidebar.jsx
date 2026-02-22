@@ -79,10 +79,17 @@ export default function Sidebar({ collapsed, onToggle }) {
 
             {/* Logo */}
             <div className="flex items-center gap-3 px-4 h-16 border-b border-surface-200 dark:border-surface-800">
-                <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center shrink-0">
-                    <Zap className="w-5 h-5 text-white" />
+                <div className="flex items-center gap-3 px-2">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-400 flex items-center justify-center shrink-0 shadow-lg shadow-primary-500/20">
+                        <Zap className="w-6 h-6 text-white" />
+                    </div>
+                    {!collapsed && (
+                        <div className="flex flex-col">
+                            <span className="font-bold text-lg tracking-tight text-primary-600 leading-none">Uacess</span>
+                            <span className="text-[9px] font-black uppercase tracking-tighter text-surface-400 mt-1 leading-none line-clamp-1">Michael Okpara University</span>
+                        </div>
+                    )}
                 </div>
-                {!collapsed && <span className="font-bold text-lg tracking-tight text-primary-600">HubAccess</span>}
             </div>
 
             {/* Nav Items */}

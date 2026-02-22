@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 
 // Health Check
 app.get('/', (req, res) => {
-    res.json({ message: 'Innovation Hub Access Management Backend API is running' });
+    res.json({ message: 'Uacess Management Backend API is running' });
 });
 
 // Routes

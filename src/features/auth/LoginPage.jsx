@@ -50,7 +50,10 @@ export default function LoginPage() {
                     <div className="w-16 h-16 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary-500/30">
                         <Zap className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-1">Innovation Hub</h1>
+                    <h1 className="text-3xl font-bold text-white mb-1">Uacess</h1>
+                    <p className="text-primary-100/80 text-xs font-bold uppercase tracking-wider mb-8">
+                        Michael Okpara University Of Agriculture Umudike
+                    </p>
                     <p className="text-surface-400 text-sm">Sign in to access your workspace</p>
                 </div>
 
@@ -132,7 +135,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="mt-6 text-center text-xs text-surface-500">
-                    Innovation Hub Access PWA • v1.0.0
+                    Uacess PWA • v1.0.0
                 </p>
             </div>
         </div>

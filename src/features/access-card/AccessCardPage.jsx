@@ -139,7 +139,7 @@ export default function AccessCardPage() {
                                 {scanFeedback.status === 'Grant' ? 'Access Granted!' : 'Access Denied'}
                             </h3>
                             <p className="text-sm opacity-90 font-medium mt-0.5">
-                                {scanFeedback.status === 'Grant' ? 'Welcome to the Hub.' : 'Please talk to the manager.'}
+                                {scanFeedback.status === 'Grant' ? 'Welcome to Unipod.' : 'Please talk to the manager.'}
                             </p>
                         </div>
                     </div>
@@ -161,7 +161,7 @@ export default function AccessCardPage() {
                 <div className={`${isActive ? 'bg-primary-600' : 'bg-danger-600'} px-8 py-6 transition-colors duration-500`}>
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">Innovation Hub Pass</p>
+                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">Unipod Pass</p>
                             <p className="text-white font-black text-xl tracking-tight">{user?.name || 'Hub Member'}</p>
                         </div>
                         <div className={`flex flex-col items-end gap-1.5`}>

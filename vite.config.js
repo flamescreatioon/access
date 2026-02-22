@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Innovation Hub Access',
-        short_name: 'HubAccess',
-        description: 'Digital access management for Innovation Hub members',
+        name: 'Uacess',
+        short_name: 'Uacess',
+        description: 'Digital access management for Unipod members',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',

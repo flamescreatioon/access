@@ -6,7 +6,9 @@ exports.getAllSpaces = async (req, res) => {
     try {
         const { type, min_capacity, tier_id, available_date } = req.query;
 
-        const where = { is_active: true };
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const where = isAdmin ? {} : { is_active: true };
+
         if (type) where.type = type;
         if (min_capacity) where.capacity = { [Op.gte]: parseInt(min_capacity) };
         if (tier_id) where.min_tier_id = { [Op.lte]: parseInt(tier_id) };

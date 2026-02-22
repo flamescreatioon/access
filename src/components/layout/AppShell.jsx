@@ -29,6 +29,13 @@ export default function AppShell() {
 
                 <main className="p-4 md:p-6 pb-24 md:pb-6 min-h-[calc(100vh-4rem)]">
                     <Outlet />
+
+                    <footer className="mt-12 pt-8 border-t border-surface-200 dark:border-surface-800 text-center">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-surface-400 mb-2">Official Hub Location</p>
+                        <p className="text-xs font-bold text-surface-500 dark:text-surface-400">
+                            Michael Okpara University Of Agriculture Umudike, Umuahia Abia State
+                        </p>
+                    </footer>
                 </main>
             </div>
 

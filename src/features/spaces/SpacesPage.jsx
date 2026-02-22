@@ -191,8 +191,8 @@ export default function SpacesPage() {
                         <button
                             onClick={() => setIsManageMode(!isManageMode)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-medium transition-all ${isManageMode
-                                    ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/20'
-                                    : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
+                                ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/20'
+                                : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
                                 }`}
                         >
                             {isManageMode ? <LayoutGrid className="w-4 h-4" /> : <List className="w-4 h-4" />}
@@ -276,6 +276,11 @@ export default function SpacesPage() {
                                             <span className="px-2 py-0.5 rounded-md bg-surface-100 dark:bg-surface-700 text-[10px] font-bold text-surface-600 dark:text-surface-400 uppercase tracking-wider">
                                                 {space.type.replace('_', ' ')}
                                             </span>
+                                            {!space.is_active && (
+                                                <span className="px-2 py-0.5 rounded-md bg-warning-500/10 text-warning-600 dark:text-warning-400 text-[10px] font-bold uppercase tracking-wider border border-warning-500/20">
+                                                    Bookings Paused
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -444,7 +449,7 @@ function SpaceModal({ space, tiers, onClose, onSave }) {
                                 value={formData.location}
                                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                 className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 border-none focus:ring-2 focus:ring-primary-500 transition-all font-semibold"
-                                placeholder="e.g. Innovation Hub"
+                                placeholder="e.g. Unipod"
                             />
                         </div>
                         <div>
@@ -466,7 +471,7 @@ function SpaceModal({ space, tiers, onClose, onSave }) {
                             <input
                                 type="number"
                                 value={formData.hourly_rate}
-                                onChange={(e) => setFormData({ ...formData, hourly_rate: parseFloat(e.target.value) })}
+                                onChange={(e) => setFormData({ ...formData, hourly_rate: parseFloat(e.target.value) || 0 })}
                                 className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 border-none focus:ring-2 focus:ring-primary-500 transition-all font-semibold"
                             />
                         </div>
@@ -485,6 +490,21 @@ function SpaceModal({ space, tiers, onClose, onSave }) {
                         </div>
                     </div>
 
+                    {/* Booking Status Toggle */}
+                    <div className="bg-surface-50 dark:bg-surface-900 p-4 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-surface-900 dark:text-white">Allow Bookings</p>
+                            <p className="text-xs text-surface-500">Enable or disable booking for this space</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
+                            className={`w-12 h-6 rounded-full transition-all relative ${formData.is_active ? 'bg-success-500' : 'bg-surface-300 dark:bg-surface-700'}`}
+                        >
+                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.is_active ? 'left-7' : 'left-1'}`} />
+                        </button>
+                    </div>
+
                     {/* Amenities */}
                     <div>
                         <label className="block text-xs font-bold text-surface-500 uppercase tracking-widest mb-3 ml-1">Amenities</label>
@@ -495,8 +515,8 @@ function SpaceModal({ space, tiers, onClose, onSave }) {
                                     type="button"
                                     onClick={() => handleAmenityToggle(amenity)}
                                     className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${formData.amenities?.includes(amenity)
-                                            ? 'bg-primary-500 border-primary-500 text-white shadow-md'
-                                            : 'bg-surface-50 dark:bg-surface-900 border-transparent text-surface-600 dark:text-surface-400'
+                                        ? 'bg-primary-500 border-primary-500 text-white shadow-md'
+                                        : 'bg-surface-50 dark:bg-surface-900 border-transparent text-surface-600 dark:text-surface-400'
                                         }`}
                                 >
                                     {amenity}

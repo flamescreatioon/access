@@ -1,4 +1,4 @@
-// Mock data generators and constants for the Innovation Hub Access PWA
+// Mock data generators and constants for the Uacess PWA (Unipod)
 
 export const ROLES = {
     MEMBER: 'Member',
@@ -16,14 +16,20 @@ export const MEMBERSHIP_TIERS = [
 ];
 
 export const ROOMS = [
-    { id: 'r1', name: 'Innovation Lab A', capacity: 8, floor: 1, amenities: ['Whiteboard', 'Projector', 'Video Conf'], image: '🧪' },
-    { id: 'r2', name: 'Focus Room 1', capacity: 2, floor: 1, amenities: ['Monitor', 'Webcam'], image: '🎯' },
-    { id: 'r3', name: 'Focus Room 2', capacity: 2, floor: 1, amenities: ['Monitor', 'Webcam'], image: '🎯' },
-    { id: 'r4', name: 'Conference Hall', capacity: 30, floor: 2, amenities: ['Stage', 'Projector', 'Sound System', 'Video Conf'], image: '🏛️' },
-    { id: 'r5', name: 'Workshop Studio', capacity: 16, floor: 2, amenities: ['Workbenches', '3D Printer', 'Tools'], image: '🔧' },
-    { id: 'r6', name: 'Brainstorm Pod', capacity: 6, floor: 1, amenities: ['Whiteboard', 'Markers', 'Sticky Notes'], image: '💡' },
-    { id: 'r7', name: 'Quiet Zone', capacity: 4, floor: 3, amenities: ['Sound Insulated', 'Standing Desks'], image: '🤫' },
-    { id: 'r8', name: 'Recording Studio', capacity: 3, floor: 3, amenities: ['Mic', 'Green Screen', 'Camera'], image: '🎙️' },
+    { id: 'r1', name: 'Cafe and lounge', capacity: 20, floor: 0, amenities: ['Coffee', 'Wi-Fi', 'Lounge Chairs'], image: '☕' },
+    { id: 'r2', name: 'Server room', capacity: 2, floor: 0, amenities: ['AC', 'Racks', 'Security'], image: '🖥️' },
+    { id: 'r3', name: 'Colab Room Left (Co-working space)', capacity: 15, floor: 1, amenities: ['Wi-Fi', 'Hot Desks'], image: '💻' },
+    { id: 'r4', name: 'Design studio', capacity: 8, floor: 1, amenities: ['Drawing Tablets', 'iMacs'], image: '🎨' },
+    { id: 'r5', name: 'Rapid Prototype Studio', capacity: 10, floor: 1, amenities: ['3D Printers', 'Laser Cutter'], image: '🧪' },
+    { id: 'r6', name: 'Food and agritech lab', capacity: 12, floor: 0, amenities: ['Lab Benches', 'Sensors'], image: '🌱' },
+    { id: 'r7', name: 'Tech Transfer Office', capacity: 4, floor: 1, amenities: ['Meeting Table', 'Storage'], image: '📁' },
+    { id: 'r8', name: 'Pitch Garage', capacity: 40, floor: 0, amenities: ['Stage', 'Projector', 'Sound System'], image: '🚗' },
+    { id: 'r9', name: 'Colab Room Right (Co-working space)', capacity: 15, floor: 1, amenities: ['Wi-Fi', 'Hot Desks'], image: '💻' },
+    { id: 'r10', name: 'Maker Studio (Wood workshop)', capacity: 8, floor: 0, amenities: ['Saws', 'Workbenches'], image: '🪵' },
+    { id: 'r11', name: 'Maker Studio (Metal Workshop)', capacity: 8, floor: 0, amenities: ['Welding', 'Lathe'], image: '⚙️' },
+    { id: 'r12', name: 'Creative Studio (Photography/Videography)', capacity: 6, floor: 2, amenities: ['Cameras', 'Lights', 'Green Screen'], image: '📸' },
+    { id: 'r13', name: 'Creative Studio (Music)', capacity: 4, floor: 2, amenities: ['Instruments', 'DAW', 'Sound Proof'], image: '🎵' },
+    { id: 'r14', name: 'Admin Office', capacity: 6, floor: 1, amenities: ['Desks', 'Printer', 'Safe'], image: '💼' },
 ];
 
 export const EQUIPMENT = [
