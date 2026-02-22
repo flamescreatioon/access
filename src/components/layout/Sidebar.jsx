@@ -49,7 +49,8 @@ const adminNav = [
 
 export default function Sidebar({ collapsed, onToggle }) {
     const { user, logout } = useAuthStore();
-    const isInactive = user?.activation_status !== 'ACTIVE';
+    const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+    const isInactive = user?.activation_status !== 'ACTIVE' && !isAdmin;
 
     let navItems = user?.role === ROLES.ADMIN ? adminNav
         : user?.role === ROLES.HUB_MANAGER ? hubManagerNav

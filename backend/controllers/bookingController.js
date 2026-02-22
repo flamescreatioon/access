@@ -24,6 +24,14 @@ exports.createBooking = async (req, res) => {
             return res.status(404).json({ message: 'Space not found or inactive' });
         }
 
+        // 1b. Restrict visibility for non-admins
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
+        if (!isAdmin && restrictedNames.includes(space.name)) {
+            await t.rollback();
+            return res.status(403).json({ message: 'Access denied: restricted space' });
+        }
+
         // 2. Check tier requirement
         if (space.min_tier_id) {
             const membership = await Membership.findOne({
@@ -170,7 +178,15 @@ exports.getUserBookings = async (req, res) => {
             order: [['start_time', upcoming === 'true' ? 'ASC' : 'DESC']],
         });
 
-        res.json(bookings);
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
+
+        let result = bookings;
+        if (!isAdmin) {
+            result = bookings.filter(b => !b.Space || !restrictedNames.includes(b.Space.name));
+        }
+
+        res.json(result);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching bookings', error: error.message });
     }

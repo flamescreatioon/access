@@ -146,11 +146,13 @@ function AdminBookingCard({ booking, onUpdateStatus, onEdit }) {
                             <X className="w-5 h-5" />
                         </button>
                     )}
-                    <button onClick={() => onEdit(booking)}
-                        className="p-2 rounded-lg bg-primary-500/10 text-primary-500 hover:bg-primary-500 hover:text-white transition-all shadow-sm"
-                        title="Edit">
-                        <Edit2 className="w-5 h-5" />
-                    </button>
+                    {onEdit && ['Admin'].includes(user?.role) && (
+                        <button onClick={() => onEdit(booking)}
+                            className="p-2 rounded-lg bg-primary-500/10 text-primary-500 hover:bg-primary-500 hover:text-white transition-all shadow-sm"
+                            title="Edit">
+                            <Edit2 className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
             </div>
 

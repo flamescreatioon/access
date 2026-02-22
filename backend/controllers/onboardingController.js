@@ -18,7 +18,7 @@ exports.getOnboardingStatus = async (req, res) => {
             {
                 id: 'select_role',
                 title: 'Select Role',
-                description: 'Choose your role: Student or Lecturer.',
+                description: 'Choose your role: Student, Lecturer, or Hub Manager.',
                 completed: !!user.role,
             },
         ];
@@ -33,18 +33,25 @@ exports.getOnboardingStatus = async (req, res) => {
             });
         }
 
-        stages.push({
-            id: 'activation',
-            title: 'Account Activation',
-            description: 'Admin verifies and activates your account.',
-            completed: user.activation_status === 'ACTIVE',
-        });
+        // Activation stage (only for those who need manual approval)
+        if (user.role !== 'Admin' && user.role !== 'Hub Manager') {
+            stages.push({
+                id: 'activation',
+                title: 'Account Activation',
+                description: 'Admin verifies and activates your account.',
+                completed: user.activation_status === 'ACTIVE',
+            });
+        }
 
         const completedCount = stages.filter(s => s.completed).length;
         const completion = Math.round((completedCount / stages.length) * 100);
 
         // Determine next step
         let nextStep = 'READY';
+
+        // Hard-fix for Hub Managers and Admins
+        const isPrivileged = user.role === 'Admin' || user.role === 'Hub Manager';
+
         if (!user.profile_complete) {
             nextStep = 'CONFIRM_DETAILS';
         } else if (!user.role) {
@@ -61,9 +68,16 @@ exports.getOnboardingStatus = async (req, res) => {
             if (user.activation_status !== 'ACTIVE') {
                 nextStep = 'LECTURER_WAITLIST';
             }
-        } else if (user.activation_status !== 'ACTIVE') {
+        } else if (user.activation_status !== 'ACTIVE' && !isPrivileged) {
             nextStep = 'WAITING_ACTIVATION';
         }
+
+        if (isPrivileged) {
+            console.log(`[DEBUG] Hub Manager / Admin Bypass for User ${user.id} (${user.name}). Role: ${user.role}, Status: ${user.activation_status}`);
+            nextStep = 'READY'; // Force discovery
+        }
+
+        console.log(`[DEBUG] Onboarding Status for ${user.id}: Role=${user.role}, NextStep=${nextStep}, Completion=${completion}%, Stages=${stages.length}`);
 
         res.json({
             user: {
@@ -142,9 +156,9 @@ exports.selectRole = async (req, res) => {
         const user = await User.findByPk(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const validRoles = ['Student', 'Lecturer'];
+        const validRoles = ['Student', 'Lecturer', 'Hub Manager'];
         if (!validRoles.includes(role)) {
-            return res.status(400).json({ message: 'Invalid role. Choose Student or Lecturer.' });
+            return res.status(400).json({ message: 'Invalid role. Choose Student, Lecturer, or Hub Manager.' });
         }
 
         const updates = { role };
@@ -152,6 +166,12 @@ exports.selectRole = async (req, res) => {
         if (role === 'Lecturer') {
             updates.activation_status = 'WAITLIST';
             updates.payment_status = 'NOT_REQUIRED';
+        } else if (role === 'Hub Manager') {
+            updates.activation_status = 'ACTIVE';
+            updates.payment_status = 'NOT_REQUIRED';
+            updates.onboarding_status = 'COMPLETED';
+            updates.account_status = 'ACTIVE';
+            updates.first_login_required = false;
         }
 
         await user.update(updates);

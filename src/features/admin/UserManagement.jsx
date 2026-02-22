@@ -4,11 +4,13 @@ import {
     UserPlus, Search, X, Eye, Shield, Mail, Calendar,
     Crown, Activity, ChevronRight, AlertTriangle, Check,
     Clock, CheckCircle2, XCircle, Building2, Layers,
-    Users, GraduationCap, BookOpen, CreditCard, Trash2, Smartphone
+    Users, GraduationCap, BookOpen, CreditCard, Trash2, Smartphone, Key
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useMembershipStore } from '../../stores/membershipStore';
+import { useAuthStore } from '../../stores/authStore';
+import { ROLES } from '../../lib/mockData';
 
 const roleStyles = {
     'Admin': 'bg-danger-500/10 text-danger-600 dark:text-danger-400',
@@ -33,7 +35,11 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
     const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedTierId, setSelectedTierId] = useState(null);
+    const [showResetPassword, setShowResetPassword] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
     const { suspendMember, reactivateMember, updateMemberTier } = useMembershipStore();
+    const { user: currentUser } = useAuthStore();
 
     useEffect(() => {
         if (user?.id) {
@@ -121,6 +127,42 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
         }
     };
 
+    const handleToggleDeactivation = async () => {
+        if (isProcessing) return;
+        const action = detail.account_status === 'DEACTIVATED' ? 'activate' : 'deactivate';
+        if (!window.confirm(`Are you sure you want to ${action} this account?`)) return;
+
+        setIsProcessing(true);
+        try {
+            const res = await api.post(`/users/admin/toggle-deactivation/${user.id}`);
+            toast.success(res.data.message);
+            setDetail(prev => ({ ...prev, account_status: res.data.account_status }));
+            onRefresh?.();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to toggle deactivation');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!newPassword || newPassword.length < 6) {
+            toast.error('Password must be at least 6 characters');
+            return;
+        }
+        setIsProcessing(true);
+        try {
+            await api.post(`/users/admin/reset-password/${user.id}`, { newPassword });
+            toast.success('Password reset successfully');
+            setShowResetPassword(false);
+            setNewPassword('');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to reset password');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
@@ -153,6 +195,16 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
                     </div>
                 ) : (
                     <div className="p-6 space-y-6 -mt-4">
+                        {/* Staff Restriction Notice */}
+                        {currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager') && (
+                            <div className="bg-warning-500/10 border border-warning-500/20 rounded-xl p-4 flex items-center gap-3">
+                                <Shield className="w-5 h-5 text-warning-500 shrink-0" />
+                                <p className="text-xs text-warning-700 dark:text-warning-400 font-medium leading-relaxed">
+                                    Administrative Account: Hub Managers are restricted from modifying other management profiles.
+                                </p>
+                            </div>
+                        )}
+
                         {/* Quick Info */}
                         <div className="grid grid-cols-2 gap-3">
                             <div className="bg-surface-50 dark:bg-surface-800 rounded-xl p-4">
@@ -200,6 +252,14 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
                                         {detail?.activation_status || 'UNKNOWN'}
                                     </span>
                                 </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-surface-100 dark:border-surface-700">
+                                    <span className="text-xs font-bold text-surface-400 uppercase tracking-widest">Account Status</span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${detail?.account_status === 'DEACTIVATED' ? 'bg-danger-500/10 text-danger-600 animate-pulse' : 'bg-success-500/10 text-success-600'}`}>
+                                        {detail?.account_status || 'ACTIVE'}
+                                    </span>
+                                </div>
+
+                                {/* Tier Selection for Approval */}
 
                                 {/* Tier Selection for Approval */}
                                 {detail?.activation_status !== 'ACTIVE' && (
@@ -221,58 +281,127 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
                                 {/* Admin Action Buttons */}
                                 {detail?.payment_status === 'AWAITING_ADMIN_CONFIRMATION' && (
                                     <div className="flex gap-2 pt-2 border-t border-surface-100 dark:border-surface-700">
-                                        <button onClick={handleApprove}
-                                            disabled={!selectedTierId}
-                                            className="flex-1 py-2.5 rounded-xl bg-success-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-success-600 transition-all shadow-md shadow-success-500/20 disabled:opacity-50">
-                                            <CheckCircle2 className="w-4 h-4" /> Approve
-                                        </button>
-                                        <button onClick={handleReject}
-                                            className="flex-1 py-2.5 rounded-xl bg-danger-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-danger-600 transition-all shadow-md shadow-danger-500/20">
-                                            <XCircle className="w-4 h-4" /> Reject
-                                        </button>
+                                        {!(currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager')) ? (
+                                            <>
+                                                <button onClick={handleApprove}
+                                                    disabled={!selectedTierId}
+                                                    className="flex-1 py-2.5 rounded-xl bg-success-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-success-600 transition-all shadow-md shadow-success-500/20 disabled:opacity-50">
+                                                    <CheckCircle2 className="w-4 h-4" /> Approve
+                                                </button>
+                                                <button onClick={handleReject}
+                                                    className="flex-1 py-2.5 rounded-xl bg-danger-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-danger-600 transition-all shadow-md shadow-danger-500/20">
+                                                    <XCircle className="w-4 h-4" /> Reject
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <p className="text-[10px] text-surface-400 italic text-center w-full">Role Restricted</p>
+                                        )}
                                     </div>
                                 )}
 
                                 {detail?.activation_status !== 'ACTIVE' && detail?.payment_status !== 'AWAITING_ADMIN_CONFIRMATION' && (
                                     <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
-                                        <button onClick={handleApprove}
-                                            disabled={!selectedTierId}
-                                            className="w-full py-2.5 rounded-xl bg-primary-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary-600 transition-all disabled:opacity-50">
-                                            <CheckCircle2 className="w-4 h-4" /> Force Activate
-                                        </button>
+                                        {!(currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager')) ? (
+                                            <button onClick={handleApprove}
+                                                disabled={!selectedTierId}
+                                                className="w-full py-2.5 rounded-xl bg-primary-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary-600 transition-all disabled:opacity-50">
+                                                <CheckCircle2 className="w-4 h-4" /> Force Activate
+                                            </button>
+                                        ) : (
+                                            <p className="text-[10px] text-surface-400 italic text-center w-full">Role Restricted</p>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* Membership Management for Active Users */}
                                 {detail?.activation_status === 'ACTIVE' && detail.Memberships?.[0] && (
                                     <div className="pt-4 border-t border-surface-100 dark:border-surface-700 space-y-4">
-                                        <div>
-                                            <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1.5">Manage Membership Plan</label>
-                                            <div className="flex gap-2">
-                                                <select
-                                                    value={detail.Memberships[0].tier_id}
-                                                    onChange={(e) => handleTierUpdate(detail.Memberships[0].id, parseInt(e.target.value))}
-                                                    className="flex-1 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-900 border-none text-xs font-semibold focus:ring-1 focus:ring-primary-500 transition-all"
-                                                >
-                                                    {tiers.map(t => (
-                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                    ))}
-                                                </select>
-                                                {detail.Memberships[0].status === 'Suspended' ? (
-                                                    <button onClick={() => handleReactivate(detail.Memberships[0].id)}
-                                                        className="px-4 py-2 rounded-lg bg-success-500/10 text-success-600 text-xs font-bold hover:bg-success-500/20 transition-all">
-                                                        Reactivate
-                                                    </button>
-                                                ) : (
-                                                    <button onClick={() => handleSuspend(detail.Memberships[0].id)}
-                                                        className="px-4 py-2 rounded-lg bg-warning-500/10 text-warning-600 text-xs font-bold hover:bg-warning-500/20 transition-all">
-                                                        Suspend
-                                                    </button>
-                                                )}
+                                        {!(currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager')) ? (
+                                            <div>
+                                                <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1.5">Manage Membership Plan</label>
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={detail.Memberships[0].tier_id}
+                                                        onChange={(e) => handleTierUpdate(detail.Memberships[0].id, parseInt(e.target.value))}
+                                                        className="flex-1 px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-900 border-none text-xs font-semibold focus:ring-1 focus:ring-primary-500 transition-all"
+                                                    >
+                                                        {tiers.map(t => (
+                                                            <option key={t.id} value={t.id}>{t.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    {detail.Memberships[0].status === 'Suspended' ? (
+                                                        <button onClick={() => handleReactivate(detail.Memberships[0].id)}
+                                                            className="px-4 py-2 rounded-lg bg-success-500/10 text-success-600 text-xs font-bold hover:bg-success-500/20 transition-all">
+                                                            Reactivate
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={() => handleSuspend(detail.Memberships[0].id)}
+                                                            className="px-4 py-2 rounded-lg bg-warning-500/10 text-warning-600 text-xs font-bold hover:bg-warning-500/20 transition-all">
+                                                            Suspend
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <p className="text-[10px] text-surface-400 italic text-center">Membership management restricted for administrative accounts.</p>
+                                        )}
                                     </div>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* Administrative Actions */}
+                        <div>
+                            <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                                <Shield className="w-4 h-4 text-primary-500" /> Administrative Controls
+                            </h3>
+                            <div className="bg-surface-50 dark:bg-surface-800 rounded-xl p-4 space-y-4">
+                                {/* Password Reset */}
+                                <div className="space-y-3">
+                                    <button onClick={() => setShowResetPassword(!showResetPassword)}
+                                        disabled={currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager')}
+                                        className="w-full py-2.5 rounded-xl border border-primary-500/20 text-primary-600 text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary-500/10 transition-all disabled:opacity-50">
+                                        <Key className="w-3.5 h-3.5" /> {showResetPassword ? 'Cancel Reset' : 'Reset User Password'}
+                                    </button>
+
+                                    {showResetPassword && (
+                                        <div className="p-3 bg-white dark:bg-surface-900 rounded-xl space-y-3 border border-primary-500/20 animate-in fade-in slide-in-from-top-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Enter new temporary password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full px-3 py-2 rounded-lg bg-surface-50 dark:bg-surface-800 border-none text-xs font-semibold focus:ring-1 focus:ring-primary-500 transition-all font-semibold"
+                                            />
+                                            <button onClick={handleResetPassword}
+                                                disabled={isProcessing || !newPassword}
+                                                className="w-full py-2 rounded-lg bg-primary-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-primary-600 disabled:opacity-50 transition-all">
+                                                Confirm New Password
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Deactivation Toggle */}
+                                <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
+                                    <button onClick={handleToggleDeactivation}
+                                        disabled={isProcessing || (currentUser?.role === ROLES.HUB_MANAGER && (detail?.role === 'Admin' || detail?.role === 'Hub Manager'))}
+                                        className={`w-full py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 ${detail?.account_status === 'DEACTIVATED'
+                                                ? 'border-success-500/20 text-success-600 hover:bg-success-500/10'
+                                                : 'border-warning-500/20 text-warning-600 hover:bg-warning-500/10'
+                                            }`}>
+                                        {detail?.account_status === 'DEACTIVATED' ? (
+                                            <> <CheckCircle2 className="w-3.5 h-3.5" /> Activate Account </>
+                                        ) : (
+                                            <> <XCircle className="w-3.5 h-3.5" /> Deactivate Account </>
+                                        )}
+                                    </button>
+                                    <p className="text-[9px] text-surface-400 text-center mt-2 italic px-4">
+                                        {detail?.account_status === 'DEACTIVATED'
+                                            ? 'Enables login access for this user.'
+                                            : 'Blocks login access without deleting data. User will see a "Contact Admin" message.'}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -302,16 +431,18 @@ function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
                             )}
                         </div>
 
-                        {/* Dangerous Zone */}
-                        <div className="pt-6 border-t border-surface-100 dark:border-surface-700">
-                            <button onClick={handleDelete}
-                                className="w-full py-3 rounded-xl border border-danger-500/20 text-danger-500 text-sm font-bold flex items-center justify-center gap-2 hover:bg-danger-500 hover:text-white transition-all">
-                                <Trash2 className="w-4 h-4" /> Delete User Account
-                            </button>
-                            <p className="text-[10px] text-surface-400 text-center mt-2 italic">
-                                This action is permanent and will remove all associated logs.
-                            </p>
-                        </div>
+                        {/* Dangerous Zone - Admin Only */}
+                        {currentUser?.role === ROLES.ADMIN && (
+                            <div className="pt-6 border-t border-surface-100 dark:border-surface-700">
+                                <button onClick={handleDelete}
+                                    className="w-full py-3 rounded-xl border border-danger-500/20 text-danger-500 text-sm font-bold flex items-center justify-center gap-2 hover:bg-danger-500 hover:text-white transition-all">
+                                    <Trash2 className="w-4 h-4" /> Delete User Account
+                                </button>
+                                <p className="text-[10px] text-surface-400 text-center mt-2 italic">
+                                    This action is permanent and will remove all associated logs.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -324,6 +455,7 @@ function CreateUserModal({ onClose, onCreated, tiers = [] }) {
     const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Student', department: '', level: '', tier_id: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const { user: currentUser } = useAuthStore();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -380,9 +512,13 @@ function CreateUserModal({ onClose, onCreated, tiers = [] }) {
                         <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
                             className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-sm focus:outline-none focus:border-primary-500 transition-colors">
                             <option value="Student">Student</option>
-                            <option value="Hub Manager">Hub Manager</option>
-                            <option value="Admin">Admin</option>
                             <option value="Lecturer">Lecturer</option>
+                            {currentUser?.role === ROLES.ADMIN && (
+                                <>
+                                    <option value="Hub Manager">Hub Manager</option>
+                                    <option value="Admin">Admin</option>
+                                </>
+                            )}
                         </select>
                     </div>
                     <div>

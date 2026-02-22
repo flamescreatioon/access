@@ -5,11 +5,12 @@ import { useBookingStore } from '../../stores/bookingStore';
 import { useLogsStore } from '../../stores/logsStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useOnboardingStore } from '../../stores/onboardingStore';
+import { useAnalyticsStore } from '../../stores/analyticsStore';
 import { ROLES } from '../../lib/mockData';
 import SetupTracker from '../../components/onboarding/SetupTracker';
 import {
     CreditCard, CalendarDays, Activity, Users, TrendingUp,
-    Shield, QrCode, AlertTriangle, ArrowUpRight, Clock,
+    Shield, QrCode, AlertTriangle, ArrowUpRight, ArrowRight, Clock,
     CheckCircle2, XCircle, MonitorSmartphone, Bell,
     Wifi, WifiOff, Zap, BarChart3, UserCheck, Eye, Sparkles, Crown, AlertCircle, Info
 } from 'lucide-react';
@@ -80,11 +81,11 @@ function LiveLogRow({ log, isAdmin }) {
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-black tracking-tight truncate group-hover:text-primary-500 transition-colors uppercase">{isAdmin ? log.memberName || 'Unknown' : log.location}</p>
                 <p className="text-[10px] font-bold text-surface-500 mt-0.5 opacity-70">
-                    {log.type.replace(/_/g, ' ')} • {log.device || 'System'}
+                    {log.type?.replace(/_/g, ' ')} • {log.device || 'System'}
                 </p>
             </div>
             <span className="text-[10px] font-black text-surface-400 whitespace-nowrap bg-surface-100 dark:bg-surface-800 px-2 py-1 rounded-lg">
-                {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                {log.timestamp ? formatDistanceToNow(new Date(log.timestamp), { addSuffix: true }) : 'Just now'}
             </span>
         </div>
     );
@@ -95,23 +96,26 @@ export default function DashboardPage() {
     const { currentMembership, members, fetchCurrentMembership, fetchAllMembers } = useMembershipStore();
     const { bookings, fetchBookings } = useBookingStore();
     const { logs, fetchLogs } = useLogsStore();
-    const { unreadCount, fetchNotifications } = useNotificationStore();
+    const { fetchNotifications, unreadCount } = useNotificationStore();
     const { status: onboardingStatus, fetchStatus: fetchOnboardingStatus } = useOnboardingStore();
+    const { stats, growthData, entryTrends, fetchAllAnalytics } = useAnalyticsStore();
 
     const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
     const isSecurity = user?.role === ROLES.SECURITY;
     const [loading, setLoading] = useState(true);
+    const [isPoorConnection, setIsPoorConnection] = useState(false);
 
     useEffect(() => {
         const initializeDashboard = async () => {
             setLoading(true);
+            const timeoutId = setTimeout(() => setIsPoorConnection(true), 12000);
+
             try {
                 // 1. Fetch onboarding status and sync user state
                 const statusData = await fetchOnboardingStatus();
 
                 if (statusData?.user) {
                     const { updateUser, user: currentUser } = useAuthStore.getState();
-                    // Sync if local state is stale
                     if (currentUser?.activation_status !== statusData.user.activation_status ||
                         currentUser?.first_login_required !== statusData.user.first_login_required) {
                         updateUser(statusData.user);
@@ -119,10 +123,10 @@ export default function DashboardPage() {
                 }
 
                 // 2. Fetch Notifications (always safe)
-                await fetchNotifications();
+                fetchNotifications();
 
                 // 3. If fully active, fetch the rest of the business data
-                const isActuallyActive = (statusData?.activationStatus || user?.activation_status) === 'ACTIVE';
+                const isActuallyActive = (statusData?.activationStatus || user?.activation_status) === 'ACTIVE' || isAdmin;
                 if (isActuallyActive) {
                     const tasks = [fetchBookings()];
 
@@ -132,14 +136,20 @@ export default function DashboardPage() {
 
                     if (isAdmin) {
                         tasks.push(fetchAllMembers());
+                        tasks.push(fetchAllAnalytics());
                     } else if (user?.id) {
                         tasks.push(fetchCurrentMembership(user.id));
+                        tasks.push(useAnalyticsStore.getState().fetchUserImpact());
                     }
 
                     await Promise.all(tasks);
                 }
+
+                clearTimeout(timeoutId);
+                setIsPoorConnection(false);
             } catch (err) {
                 console.error("Dashboard initialization error:", err);
+                setIsPoorConnection(true);
             } finally {
                 setLoading(false);
             }
@@ -150,7 +160,7 @@ export default function DashboardPage() {
         }
     }, [user?.id, isAdmin, isSecurity]);
 
-    if (loading) {
+    if (loading && !onboardingStatus) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] animate-pulse">
                 <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -160,8 +170,8 @@ export default function DashboardPage() {
     }
 
     const unread = unreadCount;
-    // Use onboardingStatus as primary, user state as secondary
-    const isFullyActive = (onboardingStatus?.activationStatus || user?.activation_status) === 'ACTIVE';
+    // Use onboardingStatus as primary, user state as secondary. Admins/Managers are always active.
+    const isFullyActive = (onboardingStatus?.activationStatus || user?.activation_status) === 'ACTIVE' || isAdmin;
 
     if (!isFullyActive && onboardingStatus) {
         return (
@@ -189,22 +199,13 @@ export default function DashboardPage() {
             </div>
         );
     }
+
     const upcomingBookingsCount = bookings.filter(b => b.status === 'confirmed' && new Date(b.start_time) > new Date()).length;
-    const activeMembersCount = members.filter(m => m.status === 'Active').length;
 
     /* ───── Member UI ───── */
     if (!isAdmin) {
         const tier = currentMembership?.AccessTier;
-
-        // Show placeholder if we're active but membership hasn't loaded yet
-        if (isFullyActive && !currentMembership && useMembershipStore.getState().isLoading) {
-            return (
-                <div className="flex flex-col items-center justify-center min-h-[50vh]">
-                    <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-surface-400">Loading Passport...</p>
-                </div>
-            );
-        }
+        const { userImpact } = useAnalyticsStore();
 
         return (
             <div className="space-y-6 page-enter page-enter-active">
@@ -224,6 +225,23 @@ export default function DashboardPage() {
                         )}
                     </Link>
                 </header>
+
+                {isPoorConnection && (
+                    <div className="bg-warning-500/10 border border-warning-500/20 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-warning-500/20 flex items-center justify-center">
+                                <WifiOff className="w-5 h-5 text-warning-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-tight text-warning-700">Network Signal Weak</p>
+                                <p className="text-[10px] font-bold text-warning-600/80 uppercase">Data may be stale. Reconnecting...</p>
+                            </div>
+                        </div>
+                        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
+                            Refresh
+                        </button>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard icon={Zap} label="Access Status" value={currentMembership?.status === 'Active' ? 'Active' : 'Inactive'} color="text-success-500" bg="bg-success-500/10" />
@@ -254,7 +272,7 @@ export default function DashboardPage() {
                                     <div className="flex items-center gap-6 mb-8">
                                         <div>
                                             <p className="text-xs font-bold opacity-60">Expires In</p>
-                                            <p className="text-xl font-black">{formatDistanceToNow(new Date(currentMembership.expiry_date))}</p>
+                                            <p className="text-xl font-black">{currentMembership.expiry_date ? formatDistanceToNow(new Date(currentMembership.expiry_date)) : 'N/A'}</p>
                                         </div>
                                         <div className="w-px h-10 bg-white/10" />
                                         <div>
@@ -304,7 +322,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="space-y-6">
-                        {/* Usage Stats Panel */}
+                        {/* Monthly Impact Panel */}
                         <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50 shadow-sm">
                             <h3 className="font-black text-sm mb-6 flex items-center gap-2 uppercase tracking-widest text-surface-400">
                                 <Sparkles className="w-4 h-4 text-primary-500" /> Monthly Impact
@@ -312,21 +330,21 @@ export default function DashboardPage() {
                             <div className="space-y-6">
                                 <div>
                                     <div className="flex justify-between text-xs font-black uppercase mb-2">
-                                        <span>Space Utilization</span>
-                                        <span className="text-primary-500">75%</span>
+                                        <span>Participation</span>
+                                        <span className="text-primary-500">{userImpact.utilizationRate}%</span>
                                     </div>
                                     <div className="h-3 bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden p-0.5">
-                                        <div className="h-full bg-primary-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" style={{ width: '75%' }} />
+                                        <div className="h-full bg-primary-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.5)]" style={{ width: `${userImpact.utilizationRate}%` }} />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-surface-100 dark:border-surface-700/50">
                                     <div>
                                         <p className="text-xs font-bold text-surface-400 lowercase">Hours Logged</p>
-                                        <p className="text-xl font-black">24.5</p>
+                                        <p className="text-xl font-black">{userImpact.estimatedHours.toFixed(1)}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs font-bold text-surface-400 lowercase">Equipment Used</p>
-                                        <p className="text-xl font-black">6 types</p>
+                                        <p className="text-xl font-black">{userImpact.uniqueEquipmentCount} types</p>
                                     </div>
                                 </div>
                             </div>
@@ -375,13 +393,30 @@ export default function DashboardPage() {
                 </div>
             </header>
 
+            {isPoorConnection && (
+                <div className="bg-warning-500/10 border border-warning-500/20 rounded-2xl p-4 flex items-center justify-between animate-in slide-in-from-top-4 duration-500 mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-warning-500/20 flex items-center justify-center">
+                            <WifiOff className="w-5 h-5 text-warning-600" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-tight text-warning-700">Network Signal Weak</p>
+                            <p className="text-[10px] font-bold text-warning-600/80 uppercase">Data may be stale. Reconnecting...</p>
+                        </div>
+                    </div>
+                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
+                        Refresh
+                    </button>
+                </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                <StatCard icon={Users} label="Total Members" value={activeMembersCount} trend="+4%" color="text-primary-500" bg="bg-primary-500/10" to="/members" />
-                <StatCard icon={CheckCircle2} label="Active Today" value={logs.length} trend="+12" color="text-success-500" bg="bg-success-500/10" to="/logs" />
-                <StatCard icon={CalendarDays} label="Bookings" value={bookings.length} trend="+8" color="text-warning-500" bg="bg-warning-500/10" to="/bookings" />
-                <StatCard icon={AlertTriangle} label="Security Fail" value={logs.filter(l => !l.success).length} color="text-danger-500" bg="bg-danger-500/10" to="/logs" />
-                <StatCard icon={TrendingUp} label="Daily Load" value="84%" trend="+3%" color="text-accent-500" bg="bg-accent-500/10" />
-                <StatCard icon={Zap} label="Upgrades" value="12" color="text-primary-400" bg="bg-primary-400/10" />
+                <StatCard icon={Users} label="Total Members" value={stats.totalMembers} trend="" color="text-primary-500" bg="bg-primary-500/10" to="/members" />
+                <StatCard icon={CheckCircle2} label="Active Today" value={stats.activeToday} trend="" color="text-success-500" bg="bg-success-500/10" to="/logs" />
+                <StatCard icon={CalendarDays} label="Bookings" value={stats.totalBookings} trend="" color="text-warning-500" bg="bg-warning-500/10" to="/bookings" />
+                <StatCard icon={AlertTriangle} label="Security Fail" value={stats.securityFailures} color="text-danger-500" bg="bg-danger-500/10" to="/logs" />
+                <StatCard icon={TrendingUp} label="Daily Load" value={`${Math.round((stats.insideNow / (stats.capacityLimit || 200)) * 100)}%`} trend="" color="text-accent-500" bg="bg-accent-500/10" />
+                <StatCard icon={Zap} label="Inside Now" value={stats.insideNow} color="text-primary-400" bg="bg-primary-400/10" />
             </div>
 
             <div className="grid lg:grid-cols-3 gap-6">
@@ -391,13 +426,13 @@ export default function DashboardPage() {
                             <h3 className="font-black text-[10px] uppercase tracking-widest text-surface-400 mb-6 flex items-center border-b border-surface-100 dark:border-surface-700 pb-2">
                                 <TrendingUp className="w-3.5 h-3.5 mr-2 text-primary-500" /> Member Growth (14d)
                             </h3>
-                            <MiniChart data={[12, 19, 15, 22, 28, 25, 34, 42, 38, 45, 52, 48, 55, 62]} color="bg-primary-500" label="Members" />
+                            <MiniChart data={growthData} color="bg-primary-500" label="Members" />
                         </div>
                         <div className="bg-white dark:bg-surface-800/50 rounded-[2rem] p-6 border border-surface-200 dark:border-surface-700/50">
                             <h3 className="font-black text-[10px] uppercase tracking-widest text-surface-400 mb-6 flex items-center border-b border-surface-100 dark:border-surface-700 pb-2">
                                 <QrCode className="w-3.5 h-3.5 mr-2 text-accent-500" /> Entries (24h)
                             </h3>
-                            <MiniChart data={[8, 4, 2, 1, 0, 5, 12, 24, 38, 42, 35, 28, 44, 48]} color="bg-accent-500" label="Scans" />
+                            <MiniChart data={entryTrends} color="bg-accent-500" label="Scans" />
                         </div>
                     </div>
 
@@ -448,19 +483,20 @@ export default function DashboardPage() {
 
                         <div className="relative pt-10 pb-6 text-center">
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-[10px] border-white/5" />
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-[10px] border-success-500 border-t-transparent -rotate-45" />
-                            <p className="text-4xl font-black">68<span className="text-lg text-white/40">%</span></p>
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full border-[10px] border-success-500 border-t-transparent -rotate-45"
+                                style={{ strokeDasharray: '283', strokeDashoffset: `${283 * (1 - stats.insideNow / (stats.capacityLimit || 200))}` }} />
+                            <p className="text-4xl font-black">{Math.round((stats.insideNow / (stats.capacityLimit || 200)) * 100)}<span className="text-lg text-white/40">%</span></p>
                             <p className="text-[10px] font-bold text-white/50 uppercase mt-1 tracking-widest">Normal Load</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <div className="p-3 bg-white/5 rounded-2xl">
                                 <p className="text-white/40 text-[9px] font-black uppercase tracking-widest leading-none mb-1">In Hub</p>
-                                <p className="text-lg font-black leading-none">142</p>
+                                <p className="text-lg font-black leading-none">{stats.insideNow}</p>
                             </div>
                             <div className="p-3 bg-white/5 rounded-2xl">
                                 <p className="text-white/40 text-[9px] font-black uppercase tracking-widest leading-none mb-1">Available</p>
-                                <p className="text-lg font-black leading-none">58</p>
+                                <p className="text-lg font-black leading-none">{Math.max(0, (stats.capacityLimit || 200) - stats.insideNow)}</p>
                             </div>
                         </div>
                     </div>

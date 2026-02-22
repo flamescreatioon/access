@@ -1,10 +1,22 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 
 const api = axios.create({
     baseURL: '/api/v1',
+    timeout: 15000, // 15 seconds timeout
     headers: {
         'Content-Type': 'application/json',
     },
+});
+
+// Configure auto-retries
+axiosRetry(api, {
+    retries: 3,
+    retryDelay: axiosRetry.exponentialDelay,
+    retryCondition: (error) => {
+        // Retry on network errors or 5xx responses
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status >= 500;
+    }
 });
 
 // Request interceptor to add JWT token

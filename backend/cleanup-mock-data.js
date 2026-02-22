@@ -3,33 +3,30 @@ const { User, sequelize } = require('./models');
 
 async function cleanup() {
     try {
-        console.log('Starting data cleanup...');
+        console.log('Starting deep data cleanup...');
 
-        // 1. Delete all users except Admin
-        const deletedUsers = await User.destroy({
-            where: {
-                email: {
-                    [require('sequelize').Op.ne]: 'admin@hub.com'
-                }
-            }
-        });
-        console.log(`Deleted ${deletedUsers} mock/demo users.`);
+        // Truncate ALL application tables with RESTART IDENTITY CASCADE
+        const tables = [
+            'AccessLogs',
+            'Bookings',
+            'AuditLogs',
+            'Notifications',
+            'RefreshTokens',
+            'RejectedAccounts',
+            'Memberships',
+            'AccessTiers',
+            'Spaces',
+            'Equipments',
+            'UserCertifications',
+            'Users'
+        ];
 
-        // 2. Clear out logs and audit tables (Smoothly because of CASCADE if associated)
-        // Since we deleted users, CASCADE should have handled associated logs/memberships for those users.
-        // But for absolute fresh start, we can truncate or delete all remaining.
+        for (const table of tables) {
+            await sequelize.query(`TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE;`);
+            console.log(`Truncated ${table}`);
+        }
 
-        await sequelize.query('TRUNCATE TABLE "AccessLogs" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "Bookings" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "AuditLogs" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "Notifications" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "RefreshTokens" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "RejectedAccounts" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "Memberships" RESTART IDENTITY CASCADE;');
-        await sequelize.query('TRUNCATE TABLE "AccessTiers" RESTART IDENTITY CASCADE;');
-
-        console.log('Cleared all logs, bookings, and audit records.');
-        console.log('Cleanup complete.');
+        console.log('Deep cleanup complete.');
 
     } catch (err) {
         console.error('Cleanup failed:', err);

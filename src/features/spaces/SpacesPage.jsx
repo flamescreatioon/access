@@ -119,6 +119,7 @@ export default function SpacesPage() {
     const [toast, setToast] = useState(null);
 
     const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
+    const canManageSpaces = user?.role === ROLES.ADMIN;
 
     useEffect(() => {
         fetchSpaces();
@@ -187,7 +188,7 @@ export default function SpacesPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {isAdmin && (
+                    {canManageSpaces && (
                         <button
                             onClick={() => setIsManageMode(!isManageMode)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border font-medium transition-all ${isManageMode
@@ -199,7 +200,7 @@ export default function SpacesPage() {
                             {isManageMode ? 'Member View' : 'Manage Spaces'}
                         </button>
                     )}
-                    {isManageMode && (
+                    {canManageSpaces && isManageMode && (
                         <button
                             onClick={() => setModal({ open: true, data: null })}
                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-success-500 text-white font-bold hover:bg-success-600 transition-all shadow-lg shadow-success-500/20"
@@ -285,22 +286,24 @@ export default function SpacesPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-surface-100 dark:border-surface-700">
-                                    <button
-                                        onClick={() => setModal({ open: true, data: space })}
-                                        className="p-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-500 hover:text-primary-500 transition-all focus:ring-2 ring-primary-500/20"
-                                        title="Edit Space"
-                                    >
-                                        <Edit2 className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(space.id)}
-                                        className="p-2.5 rounded-xl hover:bg-danger-50 dark:hover:bg-danger-900/10 text-surface-500 hover:text-danger-500 transition-all focus:ring-2 ring-danger-500/20"
-                                        title="Delete Space"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </div>
+                                {canManageSpaces && (
+                                    <div className="flex items-center justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0 border-surface-100 dark:border-surface-700">
+                                        <button
+                                            onClick={() => setModal({ open: true, data: space })}
+                                            className="p-2.5 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-700 text-surface-500 hover:text-primary-500 transition-all focus:ring-2 ring-primary-500/20"
+                                            title="Edit Space"
+                                        >
+                                            <Edit2 className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(space.id)}
+                                            className="p-2.5 rounded-xl hover:bg-danger-50 dark:hover:bg-danger-900/10 text-surface-500 hover:text-danger-500 transition-all focus:ring-2 ring-danger-500/20"
+                                            title="Delete Space"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))
                     ) : (

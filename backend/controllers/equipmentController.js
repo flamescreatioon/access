@@ -37,7 +37,16 @@ exports.getAllEquipment = async (req, res) => {
             order: [['name', 'ASC']]
         });
 
-        res.json(equipment);
+        // Filter by location for non-admins
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
+
+        let result = equipment;
+        if (!isAdmin) {
+            result = equipment.filter(e => !restrictedNames.includes(e.location));
+        }
+
+        res.json(result);
     } catch (error) {
         console.error('Error in getAllEquipment:', error);
         res.status(500).json({ message: 'Error fetching equipment', error: error.message });
@@ -55,6 +64,13 @@ exports.getEquipmentById = async (req, res) => {
         });
 
         if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
+
+        // Filter by location for non-admins
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
+        if (!isAdmin && restrictedNames.includes(equipment.location)) {
+            return res.status(403).json({ message: 'Access denied: restricted location' });
+        }
 
         // Also check if the current user is certified for this equipment
         let isCertified = false;

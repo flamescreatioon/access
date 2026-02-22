@@ -10,9 +10,9 @@ router.get('/:id', authenticate, equipmentController.getEquipmentById);
 router.get('/:id/availability', authenticate, equipmentController.getEquipmentAvailability);
 router.post('/:id/book', authenticate, equipmentController.bookEquipment);
 
-// Admin / Hub Manager Routes
-router.post('/', authenticate, authorizeRole(['Admin', 'Hub Manager']), equipmentController.createEquipment);
-router.put('/:id', authenticate, authorizeRole(['Admin', 'Hub Manager']), equipmentController.updateEquipment);
-router.delete('/:id', authenticate, authorizeRole(['Admin', 'Hub Manager']), equipmentController.deleteEquipment);
+// Admin Routes
+router.post('/', authenticate, authorizeRole(['Admin']), equipmentController.createEquipment);
+router.put('/:id', authenticate, authorizeRole(['Admin']), equipmentController.updateEquipment);
+router.delete('/:id', authenticate, authorizeRole(['Admin']), equipmentController.deleteEquipment);
 
 module.exports = router;

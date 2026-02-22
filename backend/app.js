@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const { sequelize } = require('./models');
 const equipmentRoutes = require('./routes/equipment');
 const notificationRoutes = require('./routes/notifications');
@@ -21,6 +22,7 @@ const limiter = rateLimit({
 
 // Middleware
 app.use(helmet());
+app.use(compression());
 app.use(cors());
 app.use('/api/v1', limiter); // Apply rate limit to API routes
 app.use(express.json());
@@ -51,6 +53,7 @@ app.use('/api/v1/push', pushRoutes);
 app.use('/api/v1/onboarding', require('./routes/onboarding'));
 app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));
+app.use('/api/v1/analytics', require('./routes/analytics'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

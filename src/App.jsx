@@ -40,13 +40,20 @@ function AppRoutes() {
     (user.activation_status && user.activation_status !== 'ACTIVE' || user.first_login_required);
 
   useEffect(() => {
-    if (isAuthenticated && isInactive) {
-      const allowedPaths = ['/onboarding/setup', '/profile', '/notifications'];
-      if (!allowedPaths.includes(location.pathname)) {
-        navigate('/onboarding/setup');
+    if (isAuthenticated) {
+      if (isAdmin && location.pathname === '/onboarding/setup') {
+        navigate('/dashboard');
+        return;
+      }
+
+      if (isInactive) {
+        const allowedPaths = ['/onboarding/setup', '/profile', '/notifications'];
+        if (!allowedPaths.includes(location.pathname)) {
+          navigate('/onboarding/setup');
+        }
       }
     }
-  }, [isAuthenticated, isInactive, location.pathname, navigate]);
+  }, [isAuthenticated, isInactive, isAdmin, location.pathname, navigate]);
 
   return (
     <Routes>

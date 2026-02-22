@@ -163,6 +163,13 @@ exports.createUser = async (req, res) => {
 
         const password_hash = await bcrypt.hash(password, 10);
 
+        // Staff Protection: Hub Managers cannot create other administrative roles
+        if (req.user.role === 'Hub Manager' && (role === 'Admin' || role === 'Hub Manager')) {
+            return res.status(403).json({ message: 'Forbidden: Hub Managers cannot create other administrative accounts' });
+        }
+
+        const isAdminRole = ['Admin', 'Hub Manager', 'Security'].includes(role);
+
         const user = await User.create({
             name,
             email,
@@ -170,11 +177,12 @@ exports.createUser = async (req, res) => {
             role: role || null,
             department: department || null,
             level: level || null,
-            account_status: 'INVITED',
-            activation_status: 'INCOMPLETE',
-            payment_status: 'NOT_REQUESTED',
-            first_login_required: true,
-            profile_complete: false,
+            account_status: isAdminRole ? 'ACTIVE' : 'INVITED',
+            activation_status: isAdminRole ? 'ACTIVE' : 'INCOMPLETE',
+            payment_status: isAdminRole ? 'NOT_REQUIRED' : 'NOT_REQUESTED',
+            first_login_required: !isAdminRole,
+            profile_complete: isAdminRole,
+            onboarding_status: isAdminRole ? 'COMPLETED' : 'NOT_STARTED'
         });
 
         // If tier_id is provided, create a pending membership
@@ -216,6 +224,17 @@ exports.updateUser = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Staff Protection: Hub Managers cannot modify Admins or Hub Managers
+        const isStaff = user.role === 'Admin' || user.role === 'Hub Manager';
+        if (req.user.role === 'Hub Manager') {
+            if (isStaff) {
+                return res.status(403).json({ message: 'Forbidden: You cannot modify other administrative accounts' });
+            }
+            if (role && (role === 'Admin' || role === 'Hub Manager')) {
+                return res.status(403).json({ message: 'Forbidden: You cannot promote users to administrative roles' });
+            }
+        }
+
         const updates = {};
         if (name) updates.name = name;
         if (email) updates.email = email;
@@ -248,9 +267,67 @@ exports.deleteUser = async (req, res) => {
         const user = await User.findByPk(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
+        // Extra safety check: Only Admins can delete
+        if (req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Forbidden: Only Admins can delete users' });
+        }
+
         await user.destroy();
         res.json({ message: 'User permanently deleted' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting user', error: error.message });
+    }
+};
+
+exports.adminResetPassword = async (req, res) => {
+    try {
+        const { newPassword } = req.body;
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Staff Protection: Hub Managers cannot reset passwords for other staff
+        const isStaff = user.role === 'Admin' || user.role === 'Hub Manager';
+        if (req.user.role === 'Hub Manager' && isStaff) {
+            return res.status(403).json({ message: 'Forbidden: Hub Managers cannot reset staff passwords' });
+        }
+
+        const password_hash = await bcrypt.hash(newPassword, 10);
+        await user.update({ password_hash });
+
+        // Revoke all sessions for security
+        await RefreshToken.destroy({ where: { user_id: user.id } });
+
+        res.json({ message: 'Password reset successfully. All sessions revoked.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error resetting password', error: error.message });
+    }
+};
+
+exports.toggleUserDeactivation = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Staff Protection: Hub Managers cannot deactivate staff
+        const isStaff = user.role === 'Admin' || user.role === 'Hub Manager';
+        if (req.user.role === 'Hub Manager' && isStaff) {
+            return res.status(403).json({ message: 'Forbidden: Hub Managers cannot deactivate staff accounts' });
+        }
+
+        const newStatus = user.account_status === 'DEACTIVATED' ? 'ACTIVE' : 'DEACTIVATED';
+        await user.update({ account_status: newStatus });
+
+        // If deactivated, revoke all sessions
+        if (newStatus === 'DEACTIVATED') {
+            await RefreshToken.destroy({ where: { user_id: user.id } });
+        }
+
+        res.json({
+            message: `User ${newStatus === 'DEACTIVATED' ? 'deactivated' : 'activated'} successfully`,
+            account_status: newStatus
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error toggling deactivation', error: error.message });
     }
 };

@@ -7,7 +7,10 @@ exports.getAllSpaces = async (req, res) => {
         const { type, min_capacity, tier_id, available_date } = req.query;
 
         const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
-        const where = isAdmin ? {} : { is_active: true };
+        const where = isAdmin ? {} : {
+            is_active: true,
+            name: { [Op.notIn]: ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'] }
+        };
 
         if (type) where.type = type;
         if (min_capacity) where.capacity = { [Op.gte]: parseInt(min_capacity) };
@@ -69,6 +72,13 @@ exports.getSpaceById = async (req, res) => {
 
         if (!space) return res.status(404).json({ message: 'Space not found' });
 
+        // Restrict visibility for non-admins
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
+        if (!isAdmin && restrictedNames.includes(space.name)) {
+            return res.status(403).json({ message: 'Access denied: restricted space' });
+        }
+
         res.json(space);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching space', error: error.message });
@@ -82,6 +92,15 @@ exports.getSpaceAvailability = async (req, res) => {
         const { date } = req.query;
 
         if (!date) return res.status(400).json({ message: 'Date parameter required' });
+
+        const space = await Space.findByPk(id);
+        if (!space) return res.status(404).json({ message: 'Space not found' });
+
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
+        if (!isAdmin && restrictedNames.includes(space.name)) {
+            return res.status(403).json({ message: 'Access denied: restricted space' });
+        }
 
         const dayStart = new Date(date);
         dayStart.setHours(0, 0, 0, 0);

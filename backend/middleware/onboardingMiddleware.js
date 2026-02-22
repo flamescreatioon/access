@@ -11,6 +11,12 @@ const onboardingMiddleware = async (req, res, next) => {
         return res.status(401).json({ message: 'Authentication required' });
     }
 
+    // Skip all checks for Admin, Hub Manager, and Security
+    const skipRoles = ['Admin', 'Hub Manager', 'Security'];
+    if (skipRoles.includes(user.role)) {
+        return next();
+    }
+
     // If token says inactive, check cache or double check DB for most current status
     if (user.activation_status !== 'ACTIVE') {
         const now = Date.now();

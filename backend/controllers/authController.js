@@ -111,6 +111,10 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        if (user.account_status === 'DEACTIVATED') {
+            return res.status(403).json({ message: 'Account deactivated. Please contact admin to activate account.' });
+        }
+
         const tokens = generateTokens(user, rememberMe);
 
         // Persist refresh token session
@@ -166,7 +170,13 @@ exports.refreshToken = async (req, res) => {
         }
 
         const user = await User.findByPk(decoded.id);
+        if (!user || user.account_status === 'DEACTIVATED') {
+            return res.status(403).json({ message: 'Account deactivated or user not found' });
+        }
         const tokens = generateTokens(user);
+
+        // Revoke the old refresh token record and create a new one? 
+        // Current logic rotates by updating the same record. Let's keep consistency but ensure status is checked.
 
         // Update stored token with new refresh token or rotate? 
         // For simplicity, we rotate: update existing record with new token and expiry

@@ -107,6 +107,7 @@ export default function EquipmentPage() {
     const [toast, setToast] = useState(null);
 
     const isAuthorized = user?.role === 'Admin' || user?.role === 'Hub Manager';
+    const isAdmin = user?.role === 'Admin';
 
     useEffect(() => {
         fetchEquipment({
@@ -236,12 +237,14 @@ export default function EquipmentPage() {
                                 {managementTab === 'categories' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-full" />}
                             </button>
                         </div>
-                        <button
-                            onClick={() => managementTab === 'equipment' ? setEqModal({ open: true, data: null }) : setCatModal({ open: true, data: null })}
-                            className="mb-4 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 text-white font-bold text-sm hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20"
-                        >
-                            <Plus className="w-4 h-4" /> Add {managementTab === 'equipment' ? 'Tool' : 'Category'}
-                        </button>
+                        {isAdmin && (
+                            <button
+                                onClick={() => managementTab === 'equipment' ? setEqModal({ open: true, data: null }) : setCatModal({ open: true, data: null })}
+                                className="mb-4 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-500 text-white font-bold text-sm hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20"
+                            >
+                                <Plus className="w-4 h-4" /> Add {managementTab === 'equipment' ? 'Tool' : 'Category'}
+                            </button>
+                        )}
                     </div>
 
                     {/* Table View */}
@@ -254,7 +257,7 @@ export default function EquipmentPage() {
                                         <th className="px-6 py-4">Category</th>
                                         <th className="px-6 py-4">Status</th>
                                         <th className="px-6 py-4">Access</th>
-                                        <th className="px-6 py-4 text-right">Actions</th>
+                                        {isAdmin && <th className="px-6 py-4 text-right">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-100 dark:divide-surface-700/50">
@@ -295,22 +298,24 @@ export default function EquipmentPage() {
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => setEqModal({ open: true, data: item })}
-                                                        className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-primary-500 transition-all"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteEquipment(item.id)}
-                                                        className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-danger-500 transition-all"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
+                                            {isAdmin && (
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => setEqModal({ open: true, data: item })}
+                                                            className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-primary-500 transition-all"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteEquipment(item.id)}
+                                                            className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-danger-500 transition-all"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>
@@ -321,7 +326,7 @@ export default function EquipmentPage() {
                                     <tr className="bg-surface-50 dark:bg-surface-900/30 text-[10px] font-black uppercase text-surface-500 tracking-wider">
                                         <th className="px-6 py-4">Category</th>
                                         <th className="px-6 py-4">Description</th>
-                                        <th className="px-6 py-4 text-right">Actions</th>
+                                        {isAdmin && <th className="px-6 py-4 text-right">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-100 dark:divide-surface-700/50">
@@ -338,22 +343,24 @@ export default function EquipmentPage() {
                                             <td className="px-6 py-4">
                                                 <p className="text-xs text-surface-500 max-w-xs truncate">{cat.description || 'No description provided'}</p>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => setCatModal({ open: true, data: cat })}
-                                                        className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-primary-500 transition-all"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteCategory(cat.id)}
-                                                        className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-danger-500 transition-all"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
+                                            {isAdmin && (
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => setCatModal({ open: true, data: cat })}
+                                                            className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-primary-500 transition-all"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteCategory(cat.id)}
+                                                            className="p-2 hover:bg-white dark:hover:bg-surface-700 rounded-lg text-surface-400 hover:text-danger-500 transition-all"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>

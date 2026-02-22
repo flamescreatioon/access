@@ -20,6 +20,8 @@ router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUserById);
 router.post('/', userController.createUser);
 router.put('/:id', userController.updateUser);
-router.delete('/:id', userController.deleteUser);
+router.post('/admin/reset-password/:id', userController.adminResetPassword);
+router.post('/admin/toggle-deactivation/:id', userController.toggleUserDeactivation);
+router.delete('/:id', authorizeRole(['Admin']), userController.deleteUser);
 
 module.exports = router;
