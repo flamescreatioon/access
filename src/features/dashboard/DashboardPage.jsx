@@ -145,7 +145,6 @@ export default function DashboardPage() {
                     await Promise.all(tasks);
                 }
 
-                clearTimeout(timeoutId);
                 setIsPoorConnection(false);
             } catch (err) {
                 console.error("Dashboard initialization error:", err);
@@ -158,7 +157,20 @@ export default function DashboardPage() {
         if (user?.id) {
             initializeDashboard();
         }
-    }, [user?.id, isAdmin, isSecurity]);
+
+        // Smart Polling: Refresh data every 30 seconds
+        const pollInterval = setInterval(() => {
+            if (user?.id && !loading) {
+                fetchBookings();
+                if (isAdmin || isSecurity) fetchLogs();
+                fetchNotifications();
+            }
+        }, 30000);
+
+        return () => {
+            clearInterval(pollInterval);
+        };
+    }, [user?.id, isAdmin, isSecurity, fetchBookings, fetchLogs, fetchNotifications, loading]);
 
     if (loading && !onboardingStatus) {
         return (
@@ -237,7 +249,22 @@ export default function DashboardPage() {
                                 <p className="text-[10px] font-bold text-warning-600/80 uppercase">Data may be stale. Reconnecting...</p>
                             </div>
                         </div>
-                        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
+                        <button onClick={() => {
+                            const initializeDashboard = async () => {
+                                setLoading(true);
+                                try {
+                                    await fetchOnboardingStatus();
+                                    await fetchBookings();
+                                    if (isAdmin || isSecurity) await fetchLogs();
+                                    setIsPoorConnection(false);
+                                } catch (e) {
+                                    console.error('Refresh failed');
+                                } finally {
+                                    setLoading(false);
+                                }
+                            };
+                            initializeDashboard();
+                        }} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
                             Refresh
                         </button>
                     </div>

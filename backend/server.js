@@ -9,15 +9,16 @@ async function startServer() {
         await sequelize.authenticate();
         console.log('Database connected successfully (NeonDB/PostgreSQL).');
 
-        // Sync models (optional, use migrations in production)
-        // await sequelize.sync(); 
-
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
+        // Only start the server if not in a serverless environment
+        // Vercel handles the listening part for us
+        if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+            app.listen(PORT, () => {
+                console.log(`Server running on port ${PORT}`);
+            });
+        }
     } catch (error) {
         console.error('Unable to connect to the database:', error);
-        process.exit(1);
+        if (process.env.NODE_ENV !== 'production') process.exit(1);
     }
 }
 
@@ -29,7 +30,12 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
     console.error('Uncaught Exception:', error);
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'production') process.exit(1);
 });
 
-startServer();
+// Export app for Vercel Serverless Functions
+module.exports = app;
+
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    startServer();
+}

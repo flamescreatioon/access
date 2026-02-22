@@ -28,6 +28,21 @@ export const useLogsStore = create((set, get) => ({
         }
     },
 
+    prependLog: (log) => {
+        const mappedLog = {
+            id: log.id,
+            type: 'qr_scan',
+            memberId: log.user_id,
+            memberName: log.User ? log.User.name : 'Unknown',
+            timestamp: log.createdAt,
+            location: 'Main Entrance',
+            device: log.Device ? log.Device.name : 'Unknown Device',
+            success: log.decision === 'Grant' || log.decision === 'ENTRY',
+            reason: log.decision.startsWith('Deny') ? log.decision.split(': ')[1] : 'Access Granted'
+        };
+        set(state => ({ logs: [mappedLog, ...state.logs].slice(0, 50) })); // Keep last 50
+    },
+
     getFilteredLogs: (search, typeFilter, dateRange) => {
         let results = get().logs;
         if (search) {
