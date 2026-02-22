@@ -146,7 +146,7 @@ exports.getUserById = async (req, res) => {
 // POST /api/v1/users — Admin: create a new user
 exports.createUser = async (req, res) => {
     try {
-        const { name, email, password, role, department, level } = req.body;
+        const { name, email, password, role, department, level, tier_id } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -173,6 +173,17 @@ exports.createUser = async (req, res) => {
             first_login_required: true,
             profile_complete: false,
         });
+
+        // If tier_id is provided, create a pending membership
+        if (tier_id) {
+            await Membership.create({
+                user_id: user.id,
+                tier_id,
+                status: 'Pending',
+                payment_status: 'UNPAID',
+                auto_renew: true
+            });
+        }
 
         const userResponse = {
             id: user.id,

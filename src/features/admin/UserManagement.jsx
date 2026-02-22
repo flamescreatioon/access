@@ -28,15 +28,21 @@ const paymentStatusStyles = {
 };
 
 /* ───── User Detail Drawer ───── */
-function UserDetailDrawer({ user, onClose, onRefresh }) {
+function UserDetailDrawer({ user, onClose, onRefresh, tiers = [] }) {
     const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedTierId, setSelectedTierId] = useState(null);
 
     useEffect(() => {
         if (user?.id) {
             setLoading(true);
             api.get(`/users/${user.id}`)
-                .then(res => setDetail(res.data))
+                .then(res => {
+                    setDetail(res.data);
+                    // Find existing pending membership tier if any
+                    const pending = res.data.Memberships?.find(m => m.status === 'Pending');
+                    if (pending) setSelectedTierId(pending.tier_id);
+                })
                 .catch(err => console.error(err))
                 .finally(() => setLoading(false));
         }
@@ -48,7 +54,7 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
 
     const handleApprove = async () => {
         try {
-            await api.put(`/onboarding/admin/approve/${user.id}`);
+            await api.put(`/onboarding/admin/approve/${user.id}`, { tier_id: selectedTierId });
             toast.success(`${user.name} approved and activated!`);
             setDetail(prev => ({ ...prev, activation_status: 'ACTIVE', payment_status: 'PAID' }));
             onRefresh?.();
@@ -161,11 +167,29 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
                                     </span>
                                 </div>
 
+                                {/* Tier Selection for Approval */}
+                                {detail?.activation_status !== 'ACTIVE' && (
+                                    <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
+                                        <label className="text-[10px] font-bold text-surface-400 uppercase tracking-widest block mb-1.5">Assign Access Tier</label>
+                                        <select
+                                            value={selectedTierId || ''}
+                                            onChange={(e) => setSelectedTierId(e.target.value ? parseInt(e.target.value) : null)}
+                                            className="w-full px-3 py-2 rounded-lg bg-surface-100 dark:bg-surface-900 border-none text-xs font-semibold focus:ring-1 focus:ring-primary-500 transition-all font-semibold"
+                                        >
+                                            <option value="">Select Tier...</option>
+                                            {tiers.map(t => (
+                                                <option key={t.id} value={t.id}>{t.name} (₦{t.price})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
                                 {/* Admin Action Buttons */}
                                 {detail?.payment_status === 'AWAITING_ADMIN_CONFIRMATION' && (
                                     <div className="flex gap-2 pt-2 border-t border-surface-100 dark:border-surface-700">
                                         <button onClick={handleApprove}
-                                            className="flex-1 py-2.5 rounded-xl bg-success-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-success-600 transition-all shadow-md shadow-success-500/20">
+                                            disabled={!selectedTierId}
+                                            className="flex-1 py-2.5 rounded-xl bg-success-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-success-600 transition-all shadow-md shadow-success-500/20 disabled:opacity-50">
                                             <CheckCircle2 className="w-4 h-4" /> Approve
                                         </button>
                                         <button onClick={handleReject}
@@ -178,7 +202,8 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
                                 {detail?.activation_status !== 'ACTIVE' && detail?.payment_status !== 'AWAITING_ADMIN_CONFIRMATION' && (
                                     <div className="pt-2 border-t border-surface-100 dark:border-surface-700">
                                         <button onClick={handleApprove}
-                                            className="w-full py-2.5 rounded-xl bg-primary-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary-600 transition-all">
+                                            disabled={!selectedTierId}
+                                            className="w-full py-2.5 rounded-xl bg-primary-500 text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary-600 transition-all disabled:opacity-50">
                                             <CheckCircle2 className="w-4 h-4" /> Force Activate
                                         </button>
                                     </div>
@@ -230,8 +255,8 @@ function UserDetailDrawer({ user, onClose, onRefresh }) {
 }
 
 /* ───── Create User Modal ───── */
-function CreateUserModal({ onClose, onCreated }) {
-    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Student', department: '', level: '' });
+function CreateUserModal({ onClose, onCreated, tiers = [] }) {
+    const [form, setForm] = useState({ name: '', email: '', password: '', role: 'Student', department: '', level: '', tier_id: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -295,6 +320,16 @@ function CreateUserModal({ onClose, onCreated }) {
                             <option value="Lecturer">Lecturer</option>
                         </select>
                     </div>
+                    <div>
+                        <label className="text-xs font-medium text-surface-500 mb-1 block">Access Tier (Optional)</label>
+                        <select value={form.tier_id} onChange={(e) => setForm({ ...form, tier_id: e.target.value })}
+                            className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-sm focus:outline-none focus:border-primary-500 transition-colors">
+                            <option value="">No tier assigned yet</option>
+                            {tiers.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="text-xs font-medium text-surface-500 mb-1 block">Department</label>
@@ -350,6 +385,7 @@ export default function UserManagement() {
     const [showCreate, setShowCreate] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [rejectedUsers, setRejectedUsers] = useState([]);
+    const [tiers, setTiers] = useState([]);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -372,9 +408,19 @@ export default function UserManagement() {
         }
     };
 
+    const fetchTiers = async () => {
+        try {
+            const res = await api.get('/memberships/tiers');
+            setTiers(res.data);
+        } catch (err) {
+            console.error('Error fetching tiers:', err);
+        }
+    };
+
     useEffect(() => {
         fetchUsers();
         fetchRejectedUsers();
+        fetchTiers();
     }, []);
 
     // Derived counts
@@ -623,8 +669,8 @@ export default function UserManagement() {
             )}
 
             {/* Modals */}
-            {showCreate && <CreateUserModal onClose={() => setShowCreate(false)} onCreated={handleCreated} />}
-            {selectedUser && <UserDetailDrawer user={selectedUser} onClose={() => setSelectedUser(null)} onRefresh={fetchUsers} />}
+            {showCreate && <CreateUserModal onClose={() => setShowCreate(false)} onCreated={handleCreated} tiers={tiers} />}
+            {selectedUser && <UserDetailDrawer user={selectedUser} onClose={() => setSelectedUser(null)} onRefresh={fetchUsers} tiers={tiers} />}
         </div>
     );
 }

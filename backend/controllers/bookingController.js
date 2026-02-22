@@ -116,6 +116,9 @@ exports.createBooking = async (req, res) => {
         }
 
         // 7. Create booking
+        const isAdminAction = ['Admin', 'Hub Manager'].includes(req.user.role);
+        const initialStatus = isAdminAction ? 'confirmed' : 'pending';
+
         const booking = await Booking.create({
             user_id,
             space_id,
@@ -124,7 +127,7 @@ exports.createBooking = async (req, res) => {
             notes,
             start_time: start,
             end_time: end,
-            status: 'confirmed',
+            status: initialStatus,
         });
 
         const fullBooking = await Booking.findByPk(booking.id, {
@@ -136,10 +139,15 @@ exports.createBooking = async (req, res) => {
 
         // Trigger notification
         const notificationController = require('./notificationController');
+        const statusLabel = initialStatus === 'confirmed' ? 'Confirmed' : 'Awaiting Approval';
+        const statusBody = initialStatus === 'confirmed'
+            ? `Your booking for ${space.name} has been confirmed for ${format(start, 'MMM d, h:mm a')}.`
+            : `Your booking for ${space.name} has been received and is awaiting admin approval.`;
+
         await notificationController.createNotification({
             user_id: user_id,
-            title: 'Space Booking Confirmed',
-            body: `Your booking for ${space.name} has been confirmed for ${format(start, 'MMM d, h:mm a')}.`,
+            title: `Space Booking ${statusLabel}`,
+            body: statusBody,
             type: 'booking',
             data: { booking_id: booking.id, space_id: space.id }
         });

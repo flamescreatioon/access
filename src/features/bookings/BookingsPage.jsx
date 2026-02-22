@@ -173,7 +173,7 @@ export default function BookingsPage() {
 
     const [view, setView] = useState('user'); // 'user' or 'admin'
     const [tab, setTab] = useState('upcoming');
-    const [adminFilter, setAdminFilter] = useState({ status: '', type: '' });
+    const [adminFilter, setAdminFilter] = useState({ status: 'pending', type: '' });
     const [toast, setToast] = useState(null);
 
     const isAdmin = ['Admin', 'Hub Manager'].includes(user?.role);

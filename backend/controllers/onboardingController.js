@@ -190,6 +190,7 @@ exports.confirmPaymentContact = async (req, res) => {
 exports.adminApprove = async (req, res) => {
     try {
         const { userId } = req.params;
+        const { tier_id } = req.body;
         const user = await User.findByPk(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -201,27 +202,31 @@ exports.adminApprove = async (req, res) => {
             account_status: 'ACTIVE',
         });
 
-        // Auto-assign Student Club membership if user is a Student
-        if (user.role === 'Student') {
-            const [studentTier] = await AccessTier.findOrCreate({
-                where: { name: 'Student Club' },
-                defaults: {
-                    price: 1500.00,
-                    permissions: JSON.stringify(['Standard Access', 'Coworking Space', 'Student Benefits']),
-                    color: '#22c55e',
-                    max_booking_hours: 8,
-                    max_rooms: 1,
-                    priority_booking: false,
-                    peak_access: false
-                }
+        // Handle Membership
+        let finalTierId = tier_id;
+
+        // If tier_id not provided, check for a pending membership
+        if (!finalTierId) {
+            const pendingMembership = await Membership.findOne({
+                where: { user_id: userId, status: 'Pending' }
             });
+            if (pendingMembership) {
+                finalTierId = pendingMembership.tier_id;
+                await pendingMembership.update({
+                    status: 'Active',
+                    payment_status: 'PAID'
+                });
+            }
+        } else {
+            // Deactivate existing memberships for this user
+            await Membership.update({ status: 'Inactive' }, { where: { user_id: userId } });
 
             const expiryDate = new Date();
-            expiryDate.setFullYear(expiryDate.getFullYear() + 1); // 1 year membership
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
 
             await Membership.create({
                 user_id: user.id,
-                tier_id: studentTier.id,
+                tier_id: finalTierId,
                 status: 'Active',
                 payment_status: 'PAID',
                 expiry_date: expiryDate,
@@ -237,7 +242,7 @@ exports.adminApprove = async (req, res) => {
             req,
             details: {
                 approvedUser: user.name,
-                autoAssignedMembership: user.role === 'Student' ? 'Student Club' : null
+                assignedTierId: finalTierId
             },
         });
 

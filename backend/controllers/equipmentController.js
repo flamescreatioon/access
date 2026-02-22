@@ -230,6 +230,9 @@ exports.bookEquipment = async (req, res) => {
         }
 
         // 7. Create booking
+        const isAdminAction = ['Admin', 'Hub Manager'].includes(req.user.role);
+        const initialStatus = isAdminAction ? 'confirmed' : 'pending';
+
         const booking = await Booking.create({
             user_id,
             equipment_id: id,
@@ -238,15 +241,20 @@ exports.bookEquipment = async (req, res) => {
             notes,
             start_time: start,
             end_time: end,
-            status: 'confirmed',
+            status: initialStatus,
         });
 
         // Trigger notification
         const notificationController = require('./notificationController');
+        const statusLabel = initialStatus === 'confirmed' ? 'Reserved' : 'Awaiting Approval';
+        const statusBody = initialStatus === 'confirmed'
+            ? `Your reservation for ${equipment.name} has been confirmed for ${format(start, 'MMM d, h:mm a')}.`
+            : `Your reservation for ${equipment.name} has been received and is awaiting admin approval.`;
+
         await notificationController.createNotification({
             user_id: user_id,
-            title: 'Equipment Reserved',
-            body: `Your reservation for ${equipment.name} has been confirmed for ${format(start, 'MMM d, h:mm a')}.`,
+            title: `Equipment ${statusLabel}`,
+            body: statusBody,
             type: 'booking',
             data: { booking_id: booking.id, equipment_id: equipment.id }
         });
