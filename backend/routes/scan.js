@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const scanController = require('../controllers/scanController');
-const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRole } = require('../middleware/auth');
 const onboarding = require('../middleware/onboardingMiddleware');
 
 // All scan routes require authentication and activation

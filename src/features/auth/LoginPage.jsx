@@ -12,8 +12,8 @@ const roleOptions = [
 ];
 
 export default function LoginPage() {
-    const [email, setEmail] = useState(localStorage.getItem('rememberedEmail') || 'alex@hub.com');
-    const [password, setPassword] = useState('password');
+    const [email, setEmail] = useState(localStorage.getItem('rememberedEmail') || '');
+    const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(localStorage.getItem('rememberMe') === 'true');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -95,6 +95,25 @@ export default function LoginPage() {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Remember Me & Forgot Password */}
+                        <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-5 h-5 border border-white/20 rounded-md bg-white/5 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+                                        <div className={`w-2 h-3 border-r-2 border-b-2 border-white rotate-45 mb-0.5 ${rememberMe ? 'opacity-100 scale-100' : 'opacity-0 scale-50'} transition-all`} />
+                                    </div>
+                                </div>
+                                <span className="text-xs font-semibold text-surface-400 group-hover:text-surface-200 transition-colors">Remember me</span>
+                            </label>
+                            <button type="button" className="text-xs font-semibold text-primary-400 hover:text-primary-300 transition-colors">Forgot password?</button>
                         </div>
 
                         {/* Submit */}

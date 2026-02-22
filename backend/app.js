@@ -6,11 +6,23 @@ const equipmentRoutes = require('./routes/equipment');
 const notificationRoutes = require('./routes/notifications');
 const pushRoutes = require('./routes/push');
 
+const rateLimit = require('express-rate-limit');
+
 const app = express();
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per 15 mins
+    message: { message: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Middleware
 app.use(helmet());
 app.use(cors());
+app.use('/api/v1', limiter); // Apply rate limit to API routes
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

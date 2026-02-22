@@ -58,7 +58,7 @@ export default function AccessCardPage() {
     useEffect(() => {
         if (currentMembership?.status === 'Active') {
             generateNewToken();
-            const rotationInterval = setInterval(generateNewToken, 30000);
+            const tokenInterval = setInterval(generateNewToken, 60000); // Relaxed to 60s
 
             // Start polling for scan feedback
             const checkStatus = async () => {
@@ -76,10 +76,10 @@ export default function AccessCardPage() {
                     console.error('Status check failed:', err);
                 }
             };
-            pollingRef.current = setInterval(checkStatus, 2000);
+            pollingRef.current = setInterval(checkStatus, 5000); // Relaxed to 5s
 
             return () => {
-                clearInterval(rotationInterval);
+                clearInterval(tokenInterval);
                 if (pollingRef.current) clearInterval(pollingRef.current);
             };
         }

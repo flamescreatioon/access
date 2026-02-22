@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const accessController = require('../controllers/accessController');
-const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRole } = require('../middleware/auth');
 const onboarding = require('../middleware/onboardingMiddleware');
 const { authenticateDevice } = require('../middleware/deviceMiddleware');
 

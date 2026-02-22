@@ -20,8 +20,8 @@ export default function NotificationsPage() {
     useEffect(() => {
         fetchNotifications();
 
-        // Polling for new notifications every 30 seconds
-        const interval = setInterval(() => fetchNotifications(), 30000);
+        // Relaxed to 60s
+        const interval = setInterval(fetchNotifications, 60000);
         return () => clearInterval(interval);
     }, []);
 

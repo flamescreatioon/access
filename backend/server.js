@@ -21,4 +21,15 @@ async function startServer() {
     }
 }
 
+// Final fallback for unhandled errors
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    // In production, you might want to restart the process gracefully
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    process.exit(1);
+});
+
 startServer();

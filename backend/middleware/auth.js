@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
  * Authentication middleware
  * Verifies JWT token from Authorization header (Bearer <token>)
  */
-exports.authenticate = (req, res, next) => {
+exports.authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -13,13 +13,21 @@ exports.authenticate = (req, res, next) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+        if (!process.env.JWT_SECRET) {
+            console.error('FATAL: JWT_SECRET is not defined in environment variables.');
+            return res.status(500).json({ message: 'Internal Server Configuration Error' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {
         return res.status(401).json({ message: 'Invalid or expired token' });
     }
 };
+
+// Compatibility Alias
+exports.authenticate = exports.authenticateToken;
 
 /**
  * Role-based authorization middleware

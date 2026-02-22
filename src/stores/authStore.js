@@ -16,9 +16,10 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: true, loginError: null });
         try {
             const response = await api.post('/auth/login', { email, password, rememberMe });
-            const { user, accessToken } = response.data;
+            const { user, accessToken, refreshToken } = response.data;
 
             localStorage.setItem('token', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('rememberMe', rememberMe.toString());
 
@@ -44,9 +45,10 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: true, loginError: null });
         try {
             const response = await api.post('/auth/register', { name, email, password, role });
-            const { user, accessToken } = response.data;
+            const { user, accessToken, refreshToken } = response.data;
 
             localStorage.setItem('token', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
             localStorage.setItem('user', JSON.stringify(user));
 
             set({ user, token: accessToken, isAuthenticated: true, loginError: null, isLoading: false });
@@ -64,6 +66,7 @@ export const useAuthStore = create((set, get) => ({
     logout: () => {
         if (inactivityTimer) clearTimeout(inactivityTimer);
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         // We keep 'rememberMe' and 'rememberedEmail' for the login page
         set({ user: null, token: null, isAuthenticated: false, loginError: null });

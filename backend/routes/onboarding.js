@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const onboardingController = require('../controllers/onboardingController');
-const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRole } = require('../middleware/auth');
 
 // User endpoints
 router.get('/status', authenticateToken, onboardingController.getOnboardingStatus);

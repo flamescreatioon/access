@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const deviceController = require('../controllers/deviceController');
-const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRole } = require('../middleware/auth');
 const onboarding = require('../middleware/onboardingMiddleware');
 
 // All device routes require authentication and activation
