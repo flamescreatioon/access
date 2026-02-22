@@ -12,8 +12,9 @@ const roleOptions = [
 ];
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('alex@hub.com');
+    const [email, setEmail] = useState(localStorage.getItem('rememberedEmail') || 'alex@hub.com');
     const [password, setPassword] = useState('password');
+    const [rememberMe, setRememberMe] = useState(localStorage.getItem('rememberMe') === 'true');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const { login, loginError } = useAuthStore();
@@ -22,7 +23,7 @@ export default function LoginPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        const success = await login(email, password);
+        const success = await login(email, password, rememberMe);
         if (success) {
             navigate('/dashboard');
         }
@@ -96,9 +97,6 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Role Selector */}
-
-
                         {/* Submit */}
                         <button
                             type="submit"
@@ -112,10 +110,6 @@ export default function LoginPage() {
                         </button>
                     </form>
 
-                    {/* Footer */}
-                    <div className="mt-6 text-center">
-                        <button className="text-sm text-primary-400 hover:text-primary-300 transition-colors">Forgot password?</button>
-                    </div>
                 </div>
 
                 <p className="mt-6 text-center text-xs text-surface-500">

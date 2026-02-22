@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import api from '../lib/api';
 
 let inactivityTimer = null;
-const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+const INACTIVITY_TIMEOUT_STANDARD = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_TIMEOUT_REMEMBERED = 24 * 60 * 60 * 1000; // 24 hours
 
 export const useAuthStore = create((set, get) => ({
     user: JSON.parse(localStorage.getItem('user')) || null,
@@ -11,14 +12,21 @@ export const useAuthStore = create((set, get) => ({
     loginError: null,
     isLoading: false,
 
-    login: async (email, password) => {
+    login: async (email, password, rememberMe = false) => {
         set({ isLoading: true, loginError: null });
         try {
-            const response = await api.post('/auth/login', { email, password });
+            const response = await api.post('/auth/login', { email, password, rememberMe });
             const { user, accessToken } = response.data;
 
             localStorage.setItem('token', accessToken);
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('rememberMe', rememberMe.toString());
+
+            if (rememberMe) {
+                localStorage.setItem('rememberedEmail', email);
+            } else {
+                localStorage.removeItem('rememberedEmail');
+            }
 
             set({ user, token: accessToken, isAuthenticated: true, loginError: null, isLoading: false });
             get().startInactivityTimer();
@@ -57,6 +65,7 @@ export const useAuthStore = create((set, get) => ({
         if (inactivityTimer) clearTimeout(inactivityTimer);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        // We keep 'rememberMe' and 'rememberedEmail' for the login page
         set({ user: null, token: null, isAuthenticated: false, loginError: null });
     },
 
@@ -69,9 +78,13 @@ export const useAuthStore = create((set, get) => ({
 
     startInactivityTimer: () => {
         if (inactivityTimer) clearTimeout(inactivityTimer);
+
+        const isRemembered = localStorage.getItem('rememberMe') === 'true';
+        const timeout = isRemembered ? INACTIVITY_TIMEOUT_REMEMBERED : INACTIVITY_TIMEOUT_STANDARD;
+
         inactivityTimer = setTimeout(() => {
             get().logout();
-        }, INACTIVITY_TIMEOUT);
+        }, timeout);
     },
 
     resetInactivityTimer: () => {

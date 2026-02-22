@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { recordAuditLog } = require('../utils/auditLogger');
 
-const generateTokens = (user) => {
+const generateTokens = (user, rememberMe = false) => {
     const accessToken = jwt.sign(
         {
             id: user.id,
@@ -16,17 +16,20 @@ const generateTokens = (user) => {
         process.env.JWT_SECRET,
         { expiresIn: '15m' }
     );
+
+    const refreshExpiry = rememberMe ? '30d' : '7d';
+
     const refreshToken = jwt.sign(
         { id: user.id },
         process.env.REFRESH_SECRET,
-        { expiresIn: '7d' }
+        { expiresIn: refreshExpiry }
     );
     return { accessToken, refreshToken };
 };
 
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role } = req.body;
+        const { name, email, password, role, rememberMe } = req.body;
 
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
@@ -48,15 +51,16 @@ exports.register = async (req, res) => {
             profile_complete: false
         });
 
-        const tokens = generateTokens(user);
+        const tokens = generateTokens(user, rememberMe);
 
         // Persist refresh token
+        const refreshExpiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
         await RefreshToken.create({
             user_id: user.id,
             token: tokens.refreshToken,
             device_info: req.headers['user-agent'],
             ip_address: req.ip || req.socket.remoteAddress,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            expires_at: new Date(Date.now() + refreshExpiryMs)
         });
 
         await recordAuditLog({
@@ -91,7 +95,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, rememberMe } = req.body;
         const user = await User.findOne({ where: { email } });
 
         if (!user || !(await bcrypt.compare(password, user.password_hash))) {
@@ -107,15 +111,16 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const tokens = generateTokens(user);
+        const tokens = generateTokens(user, rememberMe);
 
         // Persist refresh token session
+        const refreshExpiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
         await RefreshToken.create({
             user_id: user.id,
             token: tokens.refreshToken,
             device_info: req.headers['user-agent'],
             ip_address: req.ip || req.socket.remoteAddress,
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            expires_at: new Date(Date.now() + refreshExpiryMs)
         });
 
         await recordAuditLog({
