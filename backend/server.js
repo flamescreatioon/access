@@ -10,7 +10,7 @@ async function startServer() {
         console.log('Database connected successfully (NeonDB/PostgreSQL).');
 
         // Sync models (optional, use migrations in production)
-        // await sequelize.sync({ alter: true }); 
+        // await sequelize.sync({ alter: true });
         // console.log('Database synced (alter: true).');
 
         // Only start the server if not in a serverless environment

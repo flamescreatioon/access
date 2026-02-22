@@ -54,6 +54,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             defaultValue: true
         },
+        pricing_model: {
+            type: DataTypes.ENUM('hourly', 'daily'),
+            defaultValue: 'hourly'
+        },
         location: DataTypes.STRING
     }, {
         sequelize,

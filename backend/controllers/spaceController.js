@@ -1,18 +1,17 @@
-const { Space, AccessTier, Booking, Membership, User, Sequelize } = require('../models');
+const { Space, AccessTier, Booking, Membership, User, SpaceCategory, Amenity, Sequelize } = require('../models');
 const { Op } = Sequelize;
 
 // GET /api/v1/spaces — List all spaces with optional filters
 exports.getAllSpaces = async (req, res) => {
     try {
-        const { type, min_capacity, tier_id, available_date } = req.query;
+        const { type, min_capacity, tier_id, available_date, zone, category_id } = req.query;
 
         const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
-        const where = isAdmin ? {} : {
-            is_active: true,
-            name: { [Op.notIn]: ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'] }
-        };
+        const where = isAdmin ? {} : { is_active: true };
 
         if (type) where.type = type;
+        if (zone) where.zone = zone;
+        if (category_id) where.category_id = category_id;
         if (min_capacity) where.capacity = { [Op.gte]: parseInt(min_capacity) };
         if (tier_id) where.min_tier_id = { [Op.lte]: parseInt(tier_id) };
 
@@ -20,6 +19,7 @@ exports.getAllSpaces = async (req, res) => {
             where,
             include: [
                 { model: AccessTier, as: 'MinTier', attributes: ['id', 'name', 'color'] },
+                { model: SpaceCategory, as: 'Category' },
             ],
             order: [['name', 'ASC']],
         });
@@ -67,17 +67,11 @@ exports.getSpaceById = async (req, res) => {
         const space = await Space.findByPk(req.params.id, {
             include: [
                 { model: AccessTier, as: 'MinTier', attributes: ['id', 'name', 'color', 'price'] },
+                { model: SpaceCategory, as: 'Category' },
             ],
         });
 
         if (!space) return res.status(404).json({ message: 'Space not found' });
-
-        // Restrict visibility for non-admins
-        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
-        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
-        if (!isAdmin && restrictedNames.includes(space.name)) {
-            return res.status(403).json({ message: 'Access denied: restricted space' });
-        }
 
         res.json(space);
     } catch (error) {
@@ -153,7 +147,11 @@ exports.getSpaceAvailability = async (req, res) => {
 // POST /api/v1/spaces — Admin: create a new space
 exports.createSpace = async (req, res) => {
     try {
-        const space = await Space.create(req.body);
+        const data = { ...req.body };
+        if (data.category_id === '') data.category_id = null;
+        if (data.min_tier_id === '') data.min_tier_id = null;
+
+        const space = await Space.create(data);
         res.status(201).json(space);
     } catch (error) {
         res.status(500).json({ message: 'Error creating space', error: error.message });
@@ -166,7 +164,11 @@ exports.updateSpace = async (req, res) => {
         const space = await Space.findByPk(req.params.id);
         if (!space) return res.status(404).json({ message: 'Space not found' });
 
-        await space.update(req.body);
+        const data = { ...req.body };
+        if (data.category_id === '') data.category_id = null;
+        if (data.min_tier_id === '') data.min_tier_id = null;
+
+        await space.update(data);
         res.json(space);
     } catch (error) {
         res.status(500).json({ message: 'Error updating space', error: error.message });

@@ -3,6 +3,8 @@ import api from '../lib/api';
 
 export const useSpaceStore = create((set, get) => ({
     spaces: [],
+    categories: [],
+    amenities: [],
     currentSpace: null,
     availability: null,
     loading: false,
@@ -13,6 +15,8 @@ export const useSpaceStore = create((set, get) => ({
         try {
             const params = new URLSearchParams();
             if (filters.type) params.append('type', filters.type);
+            if (filters.zone) params.append('zone', filters.zone);
+            if (filters.category_id) params.append('category_id', filters.category_id);
             if (filters.min_capacity) params.append('min_capacity', filters.min_capacity);
             if (filters.available_date) params.append('available_date', filters.available_date);
             const res = await api.get(`/spaces?${params.toString()}`);
@@ -20,6 +24,58 @@ export const useSpaceStore = create((set, get) => ({
         } catch (error) {
             set({ error: error.response?.data?.message || 'Failed to load spaces', loading: false });
         }
+    },
+
+    fetchCategories: async () => {
+        try {
+            const res = await api.get('/space-categories');
+            set({ categories: res.data });
+        } catch (error) {
+            console.error('Failed to load categories', error);
+        }
+    },
+
+    fetchAmenities: async () => {
+        try {
+            const res = await api.get('/amenities');
+            set({ amenities: res.data });
+        } catch (error) {
+            console.error('Failed to load amenities', error);
+        }
+    },
+
+    createCategory: async (data) => {
+        const res = await api.post('/space-categories', data);
+        set(state => ({ categories: [...state.categories, res.data] }));
+        return res.data;
+    },
+
+    updateCategory: async (id, data) => {
+        const res = await api.put(`/space-categories/${id}`, data);
+        set(state => ({ categories: state.categories.map(c => c.id === id ? res.data : c) }));
+        return res.data;
+    },
+
+    deleteCategory: async (id) => {
+        await api.delete(`/space-categories/${id}`);
+        set(state => ({ categories: state.categories.filter(c => c.id !== id) }));
+    },
+
+    createAmenity: async (data) => {
+        const res = await api.post('/amenities', data);
+        set(state => ({ amenities: [...state.amenities, res.data] }));
+        return res.data;
+    },
+
+    updateAmenity: async (id, data) => {
+        const res = await api.put(`/amenities/${id}`, data);
+        set(state => ({ amenities: state.amenities.map(a => a.id === id ? res.data : a) }));
+        return res.data;
+    },
+
+    deleteAmenity: async (id) => {
+        await api.delete(`/amenities/${id}`);
+        set(state => ({ amenities: state.amenities.filter(a => a.id !== id) }));
     },
 
     fetchSpaceById: async (id) => {

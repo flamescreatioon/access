@@ -37,16 +37,7 @@ exports.getAllEquipment = async (req, res) => {
             order: [['name', 'ASC']]
         });
 
-        // Filter by location for non-admins
-        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
-        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
-
-        let result = equipment;
-        if (!isAdmin) {
-            result = equipment.filter(e => !restrictedNames.includes(e.location));
-        }
-
-        res.json(result);
+        res.json(equipment);
     } catch (error) {
         console.error('Error in getAllEquipment:', error);
         res.status(500).json({ message: 'Error fetching equipment', error: error.message });
@@ -64,13 +55,6 @@ exports.getEquipmentById = async (req, res) => {
         });
 
         if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
-
-        // Filter by location for non-admins
-        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
-        const restrictedNames = ['Admin Office', 'Tech Transfer Office', 'Server room', 'Admin office', 'Tech transfer office'];
-        if (!isAdmin && restrictedNames.includes(equipment.location)) {
-            return res.status(403).json({ message: 'Access denied: restricted location' });
-        }
 
         // Also check if the current user is certified for this equipment
         let isCertified = false;
@@ -283,6 +267,7 @@ exports.createEquipment = async (req, res) => {
         if (data.hourly_cost === '') data.hourly_cost = 0;
         if (data.max_session_hours === '') data.max_session_hours = 4;
         if (data.daily_limit_hours === '') data.daily_limit_hours = 8;
+        if (data.pricing_model === '') data.pricing_model = 'hourly';
 
         const equipment = await Equipment.create(data);
         res.status(201).json(equipment);
@@ -300,6 +285,7 @@ exports.updateEquipment = async (req, res) => {
         const data = { ...req.body };
         if (data.category_id === '') data.category_id = null;
         if (data.min_tier_id === '') data.min_tier_id = null;
+        if (data.pricing_model === '') data.pricing_model = 'hourly';
 
         await equipment.update(data);
         res.json(equipment);

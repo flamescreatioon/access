@@ -58,6 +58,8 @@ app.use('/api/v1/access', require('./routes/access'));
 app.use('/api/v1/memberships', require('./routes/memberships'));
 app.use('/api/v1/bookings', require('./routes/bookings'));
 app.use('/api/v1/spaces', require('./routes/spaces'));
+app.use('/api/v1/space-categories', require('./routes/spaceCategories'));
+app.use('/api/v1/amenities', require('./routes/amenities'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/equipment', equipmentRoutes);
 app.use('/api/v1/equipment-categories', require('./routes/equipmentCategories'));

@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
         const initializeDashboard = async () => {
             setLoading(true);
-            const timeoutId = setTimeout(() => setIsPoorConnection(true), 12000);
+            const timeoutId = setTimeout(() => setIsPoorConnection(true), 30000); // Increased to 30s
 
             try {
                 // 1. Fetch onboarding status and sync user state
@@ -221,6 +221,26 @@ export default function DashboardPage() {
 
     const upcomingBookingsCount = bookings.filter(b => b.status === 'confirmed' && new Date(b.start_time) > new Date()).length;
 
+    const handleManualRefresh = async () => {
+        setLoading(true);
+        setIsPoorConnection(false);
+        try {
+            await Promise.all([
+                fetchOnboardingStatus(),
+                fetchBookings(),
+                fetchNotifications(),
+                (isAdmin || isSecurity) ? fetchLogs() : Promise.resolve(),
+                isAdmin ? fetchAllMembers() : Promise.resolve(),
+                isAdmin ? fetchAllAnalytics() : Promise.resolve()
+            ]);
+        } catch (e) {
+            console.error('Refresh failed', e);
+            setIsPoorConnection(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     /* ───── Member UI ───── */
     if (!isAdmin) {
         const tier = currentMembership?.AccessTier;
@@ -256,22 +276,7 @@ export default function DashboardPage() {
                                 <p className="text-[10px] font-bold text-warning-600/80 uppercase">Data may be stale. Reconnecting...</p>
                             </div>
                         </div>
-                        <button onClick={() => {
-                            const initializeDashboard = async () => {
-                                setLoading(true);
-                                try {
-                                    await fetchOnboardingStatus();
-                                    await fetchBookings();
-                                    if (isAdmin || isSecurity) await fetchLogs();
-                                    setIsPoorConnection(false);
-                                } catch (e) {
-                                    console.error('Refresh failed');
-                                } finally {
-                                    setLoading(false);
-                                }
-                            };
-                            initializeDashboard();
-                        }} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
+                        <button onClick={handleManualRefresh} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
                             Refresh
                         </button>
                     </div>
@@ -438,7 +443,7 @@ export default function DashboardPage() {
                             <p className="text-[10px] font-bold text-warning-600/80 uppercase">Data may be stale. Reconnecting...</p>
                         </div>
                     </div>
-                    <button onClick={() => window.location.reload()} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
+                    <button onClick={handleManualRefresh} className="px-4 py-2 bg-warning-500 text-white text-[10px] font-black uppercase rounded-lg hover:bg-warning-600 transition-all">
                         Refresh
                     </button>
                 </div>

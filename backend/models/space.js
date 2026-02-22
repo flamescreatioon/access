@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     class Space extends Model {
         static associate(models) {
             Space.belongsTo(models.AccessTier, { foreignKey: 'min_tier_id', as: 'MinTier' });
+            Space.belongsTo(models.SpaceCategory, { foreignKey: 'category_id', as: 'Category' });
             Space.hasMany(models.Booking, { foreignKey: 'space_id' });
         }
     }
@@ -58,12 +59,23 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 4, // hours per session
         },
+        pricing_model: {
+            type: DataTypes.ENUM('hourly', 'daily'),
+            defaultValue: 'hourly',
+        },
         is_active: {
             type: DataTypes.BOOLEAN,
             defaultValue: true,
         },
         location: DataTypes.STRING,
-        floor: DataTypes.STRING,
+        zone: {
+            type: DataTypes.ENUM('Annex', 'Right Wing', 'Left Wing'),
+            allowNull: true
+        },
+        category_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        }
     }, {
         sequelize,
         modelName: 'Space',

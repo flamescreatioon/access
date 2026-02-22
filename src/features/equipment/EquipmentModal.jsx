@@ -13,6 +13,7 @@ export default function EquipmentModal({ open, data, categories, tiers, onClose,
         requires_certification: false,
         certification_name: '',
         hourly_cost: 0,
+        pricing_model: 'hourly',
         max_session_hours: 4,
         daily_limit_hours: 8,
         min_tier_id: '',
@@ -37,6 +38,7 @@ export default function EquipmentModal({ open, data, categories, tiers, onClose,
                 requires_certification: false,
                 certification_name: '',
                 hourly_cost: 0,
+                pricing_model: 'hourly',
                 max_session_hours: 4,
                 daily_limit_hours: 8,
                 min_tier_id: tiers[0]?.id || '',
@@ -145,17 +147,39 @@ export default function EquipmentModal({ open, data, categories, tiers, onClose,
                             </select>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-black uppercase text-surface-500 ml-1">Hourly Cost (₦)</label>
-                            <div className="relative">
-                                <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.hourly_cost}
-                                    onChange={e => setFormData({ ...formData, hourly_cost: e.target.value })}
-                                    className="w-full pl-11 pr-5 py-3.5 rounded-2xl bg-surface-50 dark:bg-surface-900/50 border border-surface-200 dark:border-surface-700 focus:border-primary-500 outline-none transition-all font-bold"
-                                />
+                        {/* Cost & Pricing Model */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2 bg-surface-50 dark:bg-surface-900/50 p-6 rounded-[2rem] border border-surface-200 dark:border-surface-700">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-black uppercase text-surface-500 ml-1">Pricing Model</label>
+                                <div className="flex gap-2">
+                                    {['hourly', 'daily'].map(m => (
+                                        <button
+                                            key={m}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, pricing_model: m })}
+                                            className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all border ${formData.pricing_model === m
+                                                ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/20'
+                                                : 'bg-white dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
+                                                }`}
+                                        >
+                                            {m.toUpperCase()}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-black uppercase text-surface-500 ml-1">Price (₦ / {formData.pricing_model === 'hourly' ? 'hr' : 'day'})</label>
+                                <div className="relative">
+                                    <Zap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.hourly_cost}
+                                        onChange={e => setFormData({ ...formData, hourly_cost: e.target.value })}
+                                        className="w-full pl-11 pr-5 py-3.5 rounded-2xl bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 focus:border-primary-500 outline-none transition-all font-bold"
+                                    />
+                                </div>
                             </div>
                         </div>
 
