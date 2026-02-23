@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useAuthStore } from './stores/authStore';
 import { useThemeStore } from './stores/themeStore';
 import AppShell from './components/layout/AppShell';
@@ -140,6 +141,7 @@ export default function App() {
     <BrowserRouter>
       <AppRoutes />
       <InstallPrompt />
+      <Analytics />
     </BrowserRouter>
   );
 }
