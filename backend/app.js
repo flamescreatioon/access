@@ -17,10 +17,11 @@ app.set('trust proxy', 1); // Trust first-level proxy (Vercel)
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Limit each IP to 1000 requests per 15 mins (was 100)
+    max: 1000, // Limit each IP to 1000 requests per 15 mins
     message: { message: 'Too many requests, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false }, // Disable trust proxy validation to prevent 500s on Vercel
 });
 
 // Middleware

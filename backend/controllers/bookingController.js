@@ -172,7 +172,7 @@ exports.getUserBookings = async (req, res) => {
         const bookings = await Booking.findAll({
             where,
             include: [
-                { model: Space, attributes: ['id', 'name', 'type', 'location', 'floor', 'photos'] },
+                { model: Space, attributes: ['id', 'name', 'type', 'location', 'photos'] },
                 { model: Equipment, attributes: ['id', 'name', 'category', 'photo', 'location'] },
             ],
             order: [['start_time', upcoming === 'true' ? 'ASC' : 'DESC']],
