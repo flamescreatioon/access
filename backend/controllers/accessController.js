@@ -32,7 +32,7 @@ exports.generateToken = async (req, res) => {
                 timestamp: Date.now()
             },
             process.env.JWT_SECRET, // Using same secret for now, ideally separate
-            { expiresIn: '60s' }
+            { expiresIn: '120s' }
         );
 
         // Generate 6-digit manual access code

@@ -11,8 +11,9 @@ import {
 function ScanResultOverlay({ result, onDecision, loading }) {
     if (!result) return null;
 
-    const isValid = result.status === 'VALID';
+    const isValid = result.status === 'VALID' || result.status === 'VALID_FOR_EXIT';
     const isDenied = result.status === 'DENIED';
+    const isAlreadyInside = result.status === 'VALID_FOR_EXIT' || result.reason === 'already_inside';
 
     const denyReasons = {
         expired_membership: 'Membership Expired',
@@ -24,11 +25,9 @@ function ScanResultOverlay({ result, onDecision, loading }) {
         already_inside: 'Member Already Inside',
     };
 
-    const isAlreadyInside = result.reason === 'already_inside';
-
     return (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 pb-28 md:pb-4">
-            <div className={`w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 ${isValid
+            <div className={`w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 ${result.status === 'VALID'
                 ? 'bg-gradient-to-br from-success-500 to-success-600'
                 : isAlreadyInside
                     ? 'bg-gradient-to-br from-warning-500 to-warning-600'
@@ -39,10 +38,10 @@ function ScanResultOverlay({ result, onDecision, loading }) {
                 {/* Status Header */}
                 <div className="px-6 pt-6 pb-4 text-center text-white">
                     <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-3 bg-white/20">
-                        {isValid ? <Check className="w-8 h-8" /> : isAlreadyInside ? <AlertTriangle className="w-8 h-8" /> : <Ban className="w-8 h-8" />}
+                        {result.status === 'VALID' ? <Check className="w-8 h-8" /> : isAlreadyInside ? <AlertTriangle className="w-8 h-8" /> : <Ban className="w-8 h-8" />}
                     </div>
-                    <h2 className="text-2xl font-bold">
-                        {isValid ? 'VERIFIED' : isAlreadyInside ? 'ALREADY INSIDE' : isDenied ? 'DENIED' : 'ERROR'}
+                    <h2 className="text-2xl font-bold uppercase">
+                        {result.status === 'VALID' ? 'VERIFIED' : isAlreadyInside ? 'CHECKED IN' : isDenied ? 'DENIED' : 'ERROR'}
                     </h2>
                     {(isDenied || isAlreadyInside) && (
                         <p className="mt-1 text-white/80 text-sm">
@@ -98,6 +97,23 @@ function ScanResultOverlay({ result, onDecision, loading }) {
                                 )}
                             </button>
                         </div>
+                    ) : isDenied ? (
+                        <div className="flex flex-col gap-2">
+                            {result.allow_override && (
+                                <button onClick={() => onDecision('OVERRIDE')} disabled={loading}
+                                    className="w-full py-3.5 rounded-xl bg-white text-danger-600 font-bold text-sm hover:bg-white/90 transition-colors shadow-lg flex items-center justify-center gap-2">
+                                    {loading ? (
+                                        <div className="w-4 h-4 border-2 border-danger-600 border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <><AlertTriangle className="w-5 h-5" /> Manual Override</>
+                                    )}
+                                </button>
+                            )}
+                            <button onClick={() => onDecision('DISMISS')}
+                                className="w-full py-3.5 rounded-xl bg-white/20 text-white font-semibold text-sm hover:bg-white/30 transition-colors">
+                                Dismiss
+                            </button>
+                        </div>
                     ) : (
                         <button onClick={() => onDecision('DISMISS')}
                             className="w-full py-3.5 rounded-xl bg-white/20 text-white font-semibold text-sm hover:bg-white/30 transition-colors">
@@ -116,7 +132,7 @@ function ScanResultOverlay({ result, onDecision, loading }) {
 
 export default function ScannerPage() {
     const { user } = useAuthStore();
-    const isAdmin = user?.role === ROLES.ADMIN;
+    const isPrivileged = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
     const [deviceStatus, setDeviceStatus] = useState(null);
     const [deviceLoading, setDeviceLoading] = useState(true);
     const [scanning, setScanning] = useState(false);
@@ -133,9 +149,9 @@ export default function ScannerPage() {
     const scannerRef = useRef(null);
     const html5QrRef = useRef(null);
 
-    // Admins bypass device registration — always authorized
+    // Privileged roles bypass device registration — always authorized
     useEffect(() => {
-        if (isAdmin) {
+        if (isPrivileged) {
             setDeviceStatus({ status: 'ACTIVE_SCANNER', id: 'ADMIN_DIRECT' });
             setDeviceLoading(false);
             return;
@@ -450,7 +466,7 @@ export default function ScannerPage() {
                     <Shield className="w-3.5 h-3.5 text-success-500" />
                     <span>Device Authorized</span>
                 </div>
-                {isAdmin && (
+                {isPrivileged && (
                     <button onClick={handleClearHub} disabled={clearingHub}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-danger-500/10 hover:bg-danger-500/20 text-danger-500 rounded-lg text-[10px] font-black uppercase transition-colors disabled:opacity-50">
                         {clearingHub ? (

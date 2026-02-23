@@ -1,4 +1,4 @@
-const { User, Membership, AccessTier, AccessLog, Device } = require('../models');
+const { User, Membership, AccessTier, AccessLog, Device, sequelize, Sequelize } = require('../models');
 const jwt = require('jsonwebtoken');
 
 // POST /api/v1/scan/validate — Validate a scanned QR token
@@ -6,7 +6,10 @@ exports.validateScan = async (req, res) => {
     try {
         const { qr_token, device_id, location_id } = req.body;
         const managerId = req.user.id;
-        const isAdmin = req.user.role === 'Admin';
+        const managerRole = (req.user.role || '').toLowerCase();
+        const isAdmin = managerRole === 'admin' || managerRole === 'hub manager';
+
+        console.log(`[DEBUG SCAN] Start: Token=${qr_token?.substring(0, 20)}..., Device=${device_id}, Manager=${managerId}, Role=${managerRole}, isAdmin=${isAdmin}`);
 
         // 1. Verify device is active scanner (Admins bypass this check)
         let device = null;
@@ -44,9 +47,22 @@ exports.validateScan = async (req, res) => {
             if (userWithCode) {
                 memberId = userWithCode.id;
             } else {
+                const scanLog = await AccessLog.create({
+                    user_id: null,
+                    method: 'qr_scan',
+                    decision: 'Pending',
+                    device_id: effectiveDeviceId,
+                    manager_id: managerId,
+                    scan_payload: qr_token,
+                    backend_decision: 'DENIED',
+                    deny_reason: 'invalid_code',
+                    location_id,
+                });
                 return res.json({
                     status: 'DENIED',
                     reason: 'invalid_code',
+                    scan_id: scanLog.id,
+                    allow_override: true,
                     message: 'Invalid or expired manual code',
                 });
             }
@@ -84,10 +100,18 @@ exports.validateScan = async (req, res) => {
                 memberId = decoded.userId;
             } catch (err) {
                 const reason = err.name === 'TokenExpiredError' ? 'expired_token' : 'invalid_token';
-                await AccessLog.create({
-                    user_id: null,
+
+                // Try to decode without verification to get userId for logging/override
+                let fallbackUserId = null;
+                try {
+                    const decodedNoVerify = jwt.decode(qr_token);
+                    if (decodedNoVerify && decodedNoVerify.userId) fallbackUserId = decodedNoVerify.userId;
+                } catch (e) { }
+
+                const scanLog = await AccessLog.create({
+                    user_id: fallbackUserId,
                     method: 'qr_scan',
-                    decision: 'Deny',
+                    decision: 'Pending', // Keep as pending for override
                     device_id: effectiveDeviceId,
                     manager_id: managerId,
                     scan_payload: qr_token,
@@ -95,19 +119,36 @@ exports.validateScan = async (req, res) => {
                     deny_reason: reason,
                     location_id,
                 });
+
                 return res.json({
                     status: 'DENIED',
                     reason,
+                    scan_id: scanLog.id,
+                    allow_override: true,
                     message: reason === 'expired_token' ? 'QR code has expired' : 'Invalid QR code format',
+                    member: fallbackUserId ? await User.findByPk(fallbackUserId, { attributes: ['id', 'name', 'role'] }) : null
                 });
             }
         }
 
         if (!memberId) {
+            const scanLog = await AccessLog.create({
+                user_id: null,
+                method: 'qr_scan',
+                decision: 'Pending',
+                device_id: effectiveDeviceId,
+                manager_id: managerId,
+                scan_payload: qr_token,
+                backend_decision: 'DENIED',
+                deny_reason: 'invalid_token',
+                location_id,
+            });
             return res.json({
                 status: 'DENIED',
                 reason: 'invalid_token',
-                message: 'Invalid QR code',
+                scan_id: scanLog.id,
+                allow_override: true,
+                message: 'Invalid QR code structure',
             });
         }
 
@@ -116,19 +157,22 @@ exports.validateScan = async (req, res) => {
             attributes: { exclude: ['password_hash'] },
         });
 
+        console.log(`[DEBUG SCAN] Member Found: ID=${member?.id}, Name=${member?.name}, Role=${member?.role}, isInside=${member?.is_inside}, Activation=${member?.activation_status}`);
+
         if (member && member.is_inside) {
+            // If already inside, allow scanning but set status to VALID_FOR_EXIT
+            // This allows the manager to see the member and choose 'EXIT'
             return res.json({
-                status: 'DENIED',
-                reason: 'already_inside',
-                message: 'Member is already checked in',
+                status: 'VALID_FOR_EXIT',
+                message: 'Member is already inside. Tap EXIT to check them out.',
                 member: { id: member.id, name: member.name, role: member.role }
             });
         }
         if (!member) {
-            await AccessLog.create({
+            const scanLog = await AccessLog.create({
                 user_id: memberId,
                 method: 'qr_scan',
-                decision: 'Deny',
+                decision: 'Pending',
                 device_id: effectiveDeviceId,
                 manager_id: managerId,
                 scan_payload: qr_token,
@@ -139,24 +183,35 @@ exports.validateScan = async (req, res) => {
             return res.json({
                 status: 'DENIED',
                 reason: 'user_not_found',
+                scan_id: scanLog.id,
+                allow_override: true,
                 message: 'Member not found in system',
             });
         }
 
-        // 5. Check membership
+        // 5. Check membership (Get the active one if it exists, otherwise the most recent)
         const membership = await Membership.findOne({
             where: { user_id: memberId },
             include: [AccessTier],
+            order: [
+                [sequelize.literal("CASE WHEN status = 'Active' THEN 0 ELSE 1 END"), 'ASC'],
+                ['createdAt', 'DESC']
+            ]
         });
 
-        const isMemberPrivileged = member.role === 'Admin' || member.role === 'Hub Manager';
+        const isMemberRole = (member.role || '').toLowerCase();
+        const isMemberPrivileged = isMemberRole === 'admin' || isMemberRole === 'hub manager';
+
+        console.log(`[DEBUG SCAN] Membership: Found=${!!membership}, Status=${membership?.status}, Tier=${membership?.AccessTier?.name}, Privileged=${isMemberPrivileged}`);
 
         if (!membership && !isMemberPrivileged) {
             console.log(`Scan DENIED: No membership found for user ${memberId} (${member.name})`);
-            await AccessLog.create({
+
+            // Create a pending log for possible override
+            const scanLog = await AccessLog.create({
                 user_id: memberId,
                 method: 'qr_scan',
-                decision: 'Deny',
+                decision: 'Pending',
                 device_id: effectiveDeviceId,
                 manager_id: managerId,
                 scan_payload: qr_token,
@@ -164,11 +219,14 @@ exports.validateScan = async (req, res) => {
                 deny_reason: 'no_membership',
                 location_id,
             });
+
             return res.json({
                 status: 'DENIED',
                 reason: 'no_membership',
-                message: 'No membership found',
-                member: { id: member.id, name: member.name },
+                scan_id: scanLog.id,
+                allow_override: true,
+                message: 'No membership record found for this student',
+                member: { id: member.id, name: member.name, role: member.role },
             });
         }
 
@@ -179,10 +237,12 @@ exports.validateScan = async (req, res) => {
         if (!isActive || isExpired) {
             const reason = isExpired ? 'expired_membership' : 'suspended_membership';
             console.log(`Scan DENIED: Membership ${reason} for user ${memberId} (${member.name}). Status: ${membership?.status}`);
-            await AccessLog.create({
+
+            // Create a pending log for possible override
+            const scanLog = await AccessLog.create({
                 user_id: memberId,
                 method: 'qr_scan',
-                decision: 'Deny',
+                decision: 'Pending',
                 device_id: effectiveDeviceId,
                 manager_id: managerId,
                 scan_payload: qr_token,
@@ -190,9 +250,12 @@ exports.validateScan = async (req, res) => {
                 deny_reason: reason,
                 location_id,
             });
+
             return res.json({
                 status: 'DENIED',
                 reason,
+                scan_id: scanLog.id,
+                allow_override: true, // Allow hub managers to override
                 message: isExpired ? 'Membership has expired' : 'Membership is not active',
                 member: {
                     id: member.id,
@@ -200,9 +263,9 @@ exports.validateScan = async (req, res) => {
                     role: member.role,
                 },
                 membership: {
-                    tier: membership.AccessTier?.name,
-                    status: membership.status,
-                    expiry_date: membership.expiry_date,
+                    tier: membership?.AccessTier?.name,
+                    status: membership?.status,
+                    expiry_date: membership?.expiry_date,
                 },
             });
         }
@@ -235,10 +298,10 @@ exports.validateScan = async (req, res) => {
                 role: member.role,
             },
             membership: {
-                tier: membership.AccessTier?.name,
-                tier_color: membership.AccessTier?.color,
-                status: membership.status,
-                expiry_date: membership.expiry_date,
+                tier: membership?.AccessTier?.name || (isMemberPrivileged ? 'Management' : 'Basic'),
+                tier_color: membership?.AccessTier?.color || (isMemberPrivileged ? '#eab308' : '#64748b'),
+                status: membership?.status || (isMemberPrivileged ? 'Active' : 'N/A'),
+                expiry_date: membership?.expiry_date,
             },
         });
     } catch (error) {
@@ -261,7 +324,8 @@ exports.logDecision = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to decide on this scan' });
         }
 
-        const finalDecision = decision === 'GRANT' ? 'Grant' : (decision === 'EXIT' ? 'Exit' : 'Deny');
+        const isOverride = decision === 'OVERRIDE' || override === true;
+        const finalDecision = (decision === 'GRANT' || decision === 'OVERRIDE') ? 'Grant' : (decision === 'EXIT' ? 'Exit' : 'Deny');
 
         await scanLog.update({
             decision: finalDecision,
