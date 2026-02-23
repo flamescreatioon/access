@@ -98,7 +98,7 @@ export default function DashboardPage() {
     const { logs, fetchLogs } = useLogsStore();
     const { fetchNotifications, unreadCount } = useNotificationStore();
     const { status: onboardingStatus, fetchStatus: fetchOnboardingStatus } = useOnboardingStore();
-    const { stats, growthData, entryTrends, fetchAllAnalytics } = useAnalyticsStore();
+    const { stats, growthData, entryTrends, fetchAllAnalytics, userImpact } = useAnalyticsStore();
 
     const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
     const isSecurity = user?.role === ROLES.SECURITY;
@@ -244,7 +244,6 @@ export default function DashboardPage() {
     /* ───── Member UI ───── */
     if (!isAdmin) {
         const tier = currentMembership?.AccessTier;
-        const { userImpact } = useAnalyticsStore();
 
         return (
             <div className="space-y-6 page-enter page-enter-active">
