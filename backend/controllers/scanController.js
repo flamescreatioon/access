@@ -149,7 +149,10 @@ exports.validateScan = async (req, res) => {
             include: [AccessTier],
         });
 
-        if (!membership) {
+        const isMemberPrivileged = member.role === 'Admin' || member.role === 'Hub Manager';
+
+        if (!membership && !isMemberPrivileged) {
+            console.log(`Scan DENIED: No membership found for user ${memberId} (${member.name})`);
             await AccessLog.create({
                 user_id: memberId,
                 method: 'qr_scan',
@@ -170,11 +173,12 @@ exports.validateScan = async (req, res) => {
         }
 
         // 6. Check membership status
-        const isActive = (membership.status || '').toLowerCase() === 'active';
-        const isExpired = membership.expiry_date && new Date(membership.expiry_date) < new Date();
+        const isActive = isMemberPrivileged || (membership && (membership.status || '').toLowerCase() === 'active');
+        const isExpired = !isMemberPrivileged && membership && membership.expiry_date && new Date(membership.expiry_date) < new Date();
 
         if (!isActive || isExpired) {
             const reason = isExpired ? 'expired_membership' : 'suspended_membership';
+            console.log(`Scan DENIED: Membership ${reason} for user ${memberId} (${member.name}). Status: ${membership?.status}`);
             await AccessLog.create({
                 user_id: memberId,
                 method: 'qr_scan',

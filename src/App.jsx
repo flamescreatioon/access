@@ -37,7 +37,7 @@ function AppRoutes() {
   const isAdmin = user?.role === ROLES.ADMIN || user?.role === ROLES.HUB_MANAGER;
   const isInactive = user &&
     !isAdmin &&
-    (user.activation_status && user.activation_status !== 'ACTIVE' || user.first_login_required);
+    (user.activation_status !== 'ACTIVE' || user.first_login_required);
 
   useEffect(() => {
     if (isAuthenticated) {

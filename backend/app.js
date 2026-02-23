@@ -11,6 +11,9 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
+// Security/Proxy settings
+app.set('trust proxy', 1); // Trust first-level proxy (Vercel)
+
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
