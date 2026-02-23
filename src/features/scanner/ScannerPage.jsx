@@ -163,7 +163,7 @@ export default function ScannerPage() {
                 else console.error(err);
             })
             .finally(() => setDeviceLoading(false));
-    }, [isAdmin]);
+    }, [isPrivileged]);
 
     const showToast = (msg) => {
         setToast(msg);
