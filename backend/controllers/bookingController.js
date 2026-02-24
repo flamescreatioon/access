@@ -1,8 +1,11 @@
 const { Booking, User, Space, Equipment, Membership, AccessTier, Sequelize } = require('../models');
 const { Op } = Sequelize;
 const { format } = require('date-fns');
+const { validateBookingRequest } = require('../services/bookingFairnessEngine');
+const { addToWaitlist, processWaitlist, claimSlot } = require('../services/waitlistService');
+const { getEffectiveConfig } = require('../services/bookingFairnessEngine');
 
-// POST /api/v1/bookings — Create a booking with full validation
+// POST /api/v1/bookings — Create a booking with full fairness validation
 exports.createBooking = async (req, res) => {
     const t = await Booking.sequelize.transaction();
     try {
@@ -53,64 +56,27 @@ exports.createBooking = async (req, res) => {
             }
         }
 
-        // 3. Check for time conflicts (Double-booking prevention with Transaction)
-        const conflict = await Booking.findOne({
-            where: {
-                space_id,
-                status: { [Op.in]: ['confirmed', 'pending'] },
-                [Op.or]: [{
-                    start_time: { [Op.lt]: end },
-                    end_time: { [Op.gt]: start },
-                }],
-            },
-            lock: true, // Row-level lock to prevent race conditions
-            transaction: t
+        // 3. Run fairness engine (Layers 1-6)
+        const fairnessResult = await validateBookingRequest({
+            user_id,
+            resource_type: 'space',
+            resource_id: space_id,
+            start,
+            end,
+            transaction: t,
+            req,
+            is_admin: isAdmin,
         });
 
-        if (conflict) {
+        if (!fairnessResult.valid) {
             await t.rollback();
-            return res.status(409).json({ message: 'This space is already reserved for the selected time' });
+            return res.status(fairnessResult.statusCode || 400).json({
+                message: fairnessResult.message,
+                rule: fairnessResult.rule,
+            });
         }
 
-        // 4. Check monthly booking cap
-        const membership = await Membership.findOne({
-            where: { user_id, status: 'Active' },
-            include: [AccessTier],
-            transaction: t
-        });
-
-        if (membership && membership.AccessTier) {
-            const maxHours = membership.AccessTier.max_booking_hours;
-            if (maxHours > 0) {
-                const monthStart = new Date();
-                monthStart.setDate(1);
-                monthStart.setHours(0, 0, 0, 0);
-
-                const monthBookings = await Booking.findAll({
-                    where: {
-                        user_id,
-                        type: 'space',
-                        status: { [Op.in]: ['confirmed', 'pending', 'completed'] },
-                        start_time: { [Op.gte]: monthStart },
-                    },
-                    transaction: t
-                });
-
-                const durationHours = (end - start) / 3600000;
-                const usedHours = monthBookings.reduce((sum, b) => {
-                    return sum + (new Date(b.end_time) - new Date(b.start_time)) / 3600000;
-                }, 0);
-
-                if (usedHours + durationHours > maxHours) {
-                    await t.rollback();
-                    return res.status(400).json({
-                        message: `Monthly booking limit reached (${maxHours}hrs). Used: ${usedHours.toFixed(1)}hrs`,
-                    });
-                }
-            }
-        }
-
-        // 5. Create booking
+        // 4. Create booking
         const isAdminAction = ['Admin', 'Hub Manager'].includes(req.user.role);
         const initialStatus = isAdminAction ? 'confirmed' : 'pending';
 
@@ -149,7 +115,10 @@ exports.createBooking = async (req, res) => {
             data: { booking_id: booking.id, space_id: space.id }
         });
 
-        res.status(201).json(fullBooking);
+        res.status(201).json({
+            ...fullBooking.toJSON(),
+            warning: fairnessResult.warning || null,
+        });
     } catch (error) {
         if (t) await t.rollback();
         res.status(500).json({ message: 'Error creating booking', error: error.message });
@@ -214,21 +183,28 @@ exports.getBookingById = async (req, res) => {
     }
 };
 
-// PUT /api/v1/bookings/:id — Modify booking (time only)
+// PUT /api/v1/bookings/:id — Modify booking (time only) with fairness re-validation
 exports.modifyBooking = async (req, res) => {
+    const t = await Booking.sequelize.transaction();
     try {
-        const booking = await Booking.findByPk(req.params.id);
-        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+        const booking = await Booking.findByPk(req.params.id, { transaction: t });
+        if (!booking) {
+            await t.rollback();
+            return res.status(404).json({ message: 'Booking not found' });
+        }
 
         if (booking.user_id !== req.user.id && req.user.role !== 'Admin') {
+            await t.rollback();
             return res.status(404).json({ message: 'Booking not found' });
         }
 
         if (booking.status !== 'confirmed' && booking.status !== 'pending') {
+            await t.rollback();
             return res.status(400).json({ message: 'Only active bookings can be modified' });
         }
 
         if (new Date(booking.start_time) < new Date()) {
+            await t.rollback();
             return res.status(400).json({ message: 'Cannot modify a booking that has already started or is in the past' });
         }
 
@@ -236,21 +212,31 @@ exports.modifyBooking = async (req, res) => {
         const start = start_time ? new Date(start_time) : booking.start_time;
         const end = end_time ? new Date(end_time) : booking.end_time;
 
-        // Check for conflicts (excluding this booking)
-        const conflict = await Booking.findOne({
-            where: {
-                id: { [Op.ne]: booking.id },
-                space_id: booking.space_id,
-                status: { [Op.in]: ['confirmed', 'pending'] },
-                [Op.or]: [{
-                    start_time: { [Op.lt]: end },
-                    end_time: { [Op.gt]: start },
-                }],
-            },
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+
+        // Determine resource type and id
+        const resource_type = booking.type || 'space';
+        const resource_id = resource_type === 'space' ? booking.space_id : booking.equipment_id;
+
+        // Re-validate through fairness engine (excluding current booking)
+        const fairnessResult = await validateBookingRequest({
+            user_id: booking.user_id,
+            resource_type,
+            resource_id,
+            start: new Date(start),
+            end: new Date(end),
+            transaction: t,
+            req,
+            exclude_booking_id: booking.id,
+            is_admin: isAdmin,
         });
 
-        if (conflict) {
-            return res.status(409).json({ message: 'Time conflict with another booking' });
+        if (!fairnessResult.valid) {
+            await t.rollback();
+            return res.status(fairnessResult.statusCode || 400).json({
+                message: fairnessResult.message,
+                rule: fairnessResult.rule,
+            });
         }
 
         await booking.update({
@@ -258,32 +244,45 @@ exports.modifyBooking = async (req, res) => {
             end_time: end,
             title: title || booking.title,
             notes: notes !== undefined ? notes : booking.notes,
-        });
+        }, { transaction: t });
 
-        res.json(booking);
+        await t.commit();
+
+        res.json({
+            ...booking.toJSON(),
+            warning: fairnessResult.warning || null,
+        });
     } catch (error) {
+        if (t) await t.rollback();
         res.status(500).json({ message: 'Error modifying booking', error: error.message });
     }
 };
 
-// DELETE /api/v1/bookings/:id — Cancel booking (with cancellation window)
+// DELETE /api/v1/bookings/:id — Cancel booking (with cancellation window + waitlist processing)
 exports.cancelBooking = async (req, res) => {
+    const t = await Booking.sequelize.transaction();
     try {
         const { id } = req.params;
         const { reason } = req.body || {};
-        const booking = await Booking.findByPk(id);
+        const booking = await Booking.findByPk(id, { transaction: t });
 
-        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+        if (!booking) {
+            await t.rollback();
+            return res.status(404).json({ message: 'Booking not found' });
+        }
 
         if (booking.user_id !== req.user.id && req.user.role !== 'Admin') {
+            await t.rollback();
             return res.status(404).json({ message: 'Booking not found' });
         }
 
         if (booking.status === 'cancelled') {
+            await t.rollback();
             return res.status(400).json({ message: 'Booking already cancelled' });
         }
 
         if (new Date(booking.start_time) < new Date()) {
+            await t.rollback();
             return res.status(400).json({ message: 'Cannot cancel a booking that has already started or is in the past' });
         }
 
@@ -295,7 +294,40 @@ exports.cancelBooking = async (req, res) => {
             status: 'cancelled',
             cancelled_at: new Date(),
             cancel_reason: reason || (isLateCancellation ? 'Late cancellation' : 'User cancelled'),
-        });
+        }, { transaction: t });
+
+        // Process waitlist for this slot
+        const resource_type = booking.type || 'space';
+        const resource_id = resource_type === 'space' ? booking.space_id : booking.equipment_id;
+
+        try {
+            const config = await getEffectiveConfig(resource_type, resource_id);
+            if (config.waitlist_enabled) {
+                const offered = await processWaitlist(
+                    resource_type,
+                    resource_id,
+                    booking.start_time,
+                    booking.end_time,
+                    t
+                );
+
+                if (offered) {
+                    // Notify the waitlisted user
+                    const notificationController = require('./notificationController');
+                    await notificationController.createNotification({
+                        user_id: offered.user_id,
+                        title: 'Slot Available!',
+                        body: `A slot you were waiting for is now available. Claim it within ${config.waitlist_claim_minutes} minutes.`,
+                        type: 'waitlist',
+                        data: { waitlist_id: offered.id, resource_type, resource_id }
+                    });
+                }
+            }
+        } catch (waitlistErr) {
+            console.error('Waitlist processing error (non-fatal):', waitlistErr);
+        }
+
+        await t.commit();
 
         res.json({
             message: 'Booking cancelled',
@@ -303,7 +335,94 @@ exports.cancelBooking = async (req, res) => {
             warning: isLateCancellation ? 'Late cancellation recorded. Repeated late cancellations may result in booking restrictions.' : null,
         });
     } catch (error) {
+        if (t) await t.rollback();
         res.status(500).json({ message: 'Error cancelling booking', error: error.message });
+    }
+};
+
+// POST /api/v1/bookings/:id/check-in — Member check-in (for no-show tracking)
+exports.checkInBooking = async (req, res) => {
+    try {
+        const booking = await Booking.findByPk(req.params.id);
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+        // Allow check-in by the user or admin
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        if (booking.user_id !== req.user.id && !isAdmin) {
+            return res.status(403).json({ message: 'Not authorized' });
+        }
+
+        if (booking.status !== 'confirmed') {
+            return res.status(400).json({ message: 'Only confirmed bookings can be checked in' });
+        }
+
+        if (booking.check_in_time) {
+            return res.status(400).json({ message: 'Already checked in' });
+        }
+
+        await booking.update({
+            check_in_time: new Date(),
+            status: 'completed',
+        });
+
+        res.json({ message: 'Checked in successfully', booking });
+    } catch (error) {
+        res.status(500).json({ message: 'Error checking in', error: error.message });
+    }
+};
+
+// POST /api/v1/bookings/waitlist — Join waitlist
+exports.joinWaitlist = async (req, res) => {
+    try {
+        const { resource_type, resource_id, start_time, end_time } = req.body;
+        const user_id = req.user.id;
+
+        if (!resource_type || !resource_id || !start_time || !end_time) {
+            return res.status(400).json({ message: 'resource_type, resource_id, start_time, and end_time are required' });
+        }
+
+        // Check if waitlist is enabled
+        const config = await getEffectiveConfig(resource_type, resource_id);
+        if (!config.waitlist_enabled) {
+            return res.status(400).json({ message: 'Waitlist is not enabled for this resource' });
+        }
+
+        const result = await addToWaitlist({
+            resource_type,
+            resource_id,
+            start_time: new Date(start_time),
+            end_time: new Date(end_time),
+            user_id,
+        });
+
+        if (!result.success) {
+            return res.status(400).json({ message: result.message });
+        }
+
+        res.status(201).json({
+            message: `Added to waitlist at position ${result.position}`,
+            data: result.data,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error joining waitlist', error: error.message });
+    }
+};
+
+// POST /api/v1/bookings/waitlist/:id/claim — Claim waitlisted slot
+exports.claimWaitlistSlot = async (req, res) => {
+    try {
+        const result = await claimSlot(req.params.id, req.user.id);
+
+        if (!result.success) {
+            return res.status(result.statusCode || 400).json({ message: result.message });
+        }
+
+        res.json({
+            message: 'Slot claimed! Please complete your booking.',
+            data: result.data,
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error claiming slot', error: error.message });
     }
 };
 

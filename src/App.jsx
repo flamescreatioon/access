@@ -21,6 +21,7 @@ import ProfilePage from './features/profile/ProfilePage';
 import AccessRulesPage from './features/admin/AccessRulesPage';
 import DevicesPage from './features/admin/DevicesPage';
 import UserManagement from './features/admin/UserManagement';
+import BookingConfigPage from './features/admin/BookingConfigPage';
 import ScannerPage from './features/scanner/ScannerPage';
 import DeviceActivation from './features/scanner/DeviceActivation';
 import ScanHistory from './features/scanner/ScanHistory';
@@ -103,6 +104,11 @@ function AppRoutes() {
         <Route path="/users" element={
           <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
             <UserManagement />
+          </AuthGuard>
+        } />
+        <Route path="/booking-rules" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <BookingConfigPage />
           </AuthGuard>
         } />
 

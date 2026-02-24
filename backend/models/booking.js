@@ -35,6 +35,18 @@ module.exports = (sequelize, DataTypes) => {
     },
     cancelled_at: DataTypes.DATE,
     cancel_reason: DataTypes.STRING,
+    check_in_time: DataTypes.DATE,
+    duration: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        const start = this.getDataValue('start_time');
+        const end = this.getDataValue('end_time');
+        if (start && end) {
+          return (new Date(end) - new Date(start)) / 3600000;
+        }
+        return null;
+      }
+    },
   }, {
     sequelize,
     modelName: 'Booking',

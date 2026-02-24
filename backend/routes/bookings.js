@@ -8,15 +8,20 @@ const bookingController = require('../controllers/bookingController');
 router.use(authenticate);
 router.use(onboarding);
 
+// Admin routes (must be before parameterized routes to avoid :id matching)
+router.get('/admin/all', authorizeRole(['Admin', 'Hub Manager']), bookingController.getAllBookings);
+router.patch('/admin/:id/status', authorizeRole(['Admin', 'Hub Manager']), bookingController.updateBookingStatus);
+
+// Waitlist routes
+router.post('/waitlist', bookingController.joinWaitlist);
+router.post('/waitlist/:id/claim', bookingController.claimWaitlistSlot);
+
 // Member routes
 router.post('/', bookingController.createBooking);
 router.get('/', bookingController.getUserBookings);
 router.get('/:id', bookingController.getBookingById);
 router.put('/:id', bookingController.modifyBooking);
 router.delete('/:id', bookingController.cancelBooking);
-
-// Admin routes
-router.get('/admin/all', authorizeRole('Admin', 'Hub Manager'), bookingController.getAllBookings);
-router.patch('/admin/:id/status', authorizeRole('Admin', 'Hub Manager'), bookingController.updateBookingStatus);
+router.post('/:id/check-in', bookingController.checkInBooking);
 
 module.exports = router;

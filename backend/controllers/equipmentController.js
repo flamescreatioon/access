@@ -1,6 +1,7 @@
 const { Equipment, UserCertification, Booking, User, Membership, AccessTier, EquipmentCategory, Sequelize } = require('../models');
 const { Op } = Sequelize;
 const { format } = require('date-fns');
+const { validateBookingRequest } = require('../services/bookingFairnessEngine');
 
 // GET /api/v1/equipment/certifications — Get current user's certifications
 exports.getUserCertifications = async (req, res) => {
@@ -191,30 +192,32 @@ exports.bookEquipment = async (req, res) => {
             }
         }
 
-        // 4. Check for conflicts (Double-booking prevention with Transaction)
-        const conflict = await Booking.findOne({
-            where: {
-                equipment_id: id,
-                status: { [Op.in]: ['confirmed', 'pending'] },
-                [Op.or]: [{
-                    start_time: { [Op.lt]: end },
-                    end_time: { [Op.gt]: start },
-                }],
-            },
-            lock: true, // Row-level lock to prevent race conditions
-            transaction: t
-        });
-
-        if (conflict) {
-            await t.rollback();
-            return res.status(409).json({ message: 'Equipment is already reserved for this time' });
-        }
-
-        // 5. Check session limits
+        // 4. Check session limits (equipment-specific, before fairness engine)
         const durationHours = (end - start) / 3600000;
         if (equipment.max_session_hours > 0 && durationHours > equipment.max_session_hours) {
             await t.rollback();
             return res.status(400).json({ message: `Max session duration is ${equipment.max_session_hours} hours` });
+        }
+
+        // 5. Run fairness engine (Layers 1-6: availability, lock, usage, cap, cooldown, no-show)
+        const isAdmin = req.user.role === 'Admin' || req.user.role === 'Hub Manager';
+        const fairnessResult = await validateBookingRequest({
+            user_id,
+            resource_type: 'equipment',
+            resource_id: parseInt(id),
+            start,
+            end,
+            transaction: t,
+            req,
+            is_admin: isAdmin,
+        });
+
+        if (!fairnessResult.valid) {
+            await t.rollback();
+            return res.status(fairnessResult.statusCode || 400).json({
+                message: fairnessResult.message,
+                rule: fairnessResult.rule,
+            });
         }
 
         // 6. Create booking
@@ -249,7 +252,10 @@ exports.bookEquipment = async (req, res) => {
             data: { booking_id: booking.id, equipment_id: equipment.id }
         });
 
-        res.status(201).json(booking);
+        res.status(201).json({
+            ...booking.toJSON(),
+            warning: fairnessResult.warning || null,
+        });
     } catch (error) {
         if (t) await t.rollback();
         console.error('Error in bookEquipment:', error);

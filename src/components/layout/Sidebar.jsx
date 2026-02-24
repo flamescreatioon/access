@@ -5,7 +5,7 @@ import {
     LayoutDashboard, CreditCard, CalendarDays, Activity,
     Crown, Users, Shield, MonitorSmartphone, BookOpen,
     UserCheck, UserPlus, Settings, LogOut, Zap,
-    ScanLine, Smartphone, History, Building, Wrench, Bell
+    ScanLine, Smartphone, History, Building, Wrench, Bell, Sliders
 } from 'lucide-react';
 
 const memberNav = [
@@ -29,6 +29,7 @@ const hubManagerNav = [
     { to: '/spaces', label: 'Spaces', icon: Building },
     { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/booking-rules', label: 'Booking Rules', icon: Sliders },
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
 ];
@@ -43,6 +44,7 @@ const adminNav = [
     { to: '/spaces', label: 'Spaces', icon: Building },
     { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/booking-rules', label: 'Booking Rules', icon: Sliders },
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
 ];

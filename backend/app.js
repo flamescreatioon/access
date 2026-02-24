@@ -79,6 +79,7 @@ app.use('/api/v1/onboarding', require('./routes/onboarding'));
 app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));
 app.use('/api/v1/analytics', require('./routes/analytics'));
+app.use('/api/v1/booking-config', require('./routes/bookingConfig'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
