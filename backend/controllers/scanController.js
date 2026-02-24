@@ -411,31 +411,32 @@ exports.getScanStats = async (req, res) => {
 // POST /api/v1/scan/checkout-all — Admin clears all active sessions
 exports.checkoutAll = async (req, res) => {
     try {
-        const { Op } = require('sequelize');
+        // Perform mass update and get affected count
+        const updateResult = await User.update(
+            { is_inside: false },
+            { where: { is_inside: true } }
+        );
 
-        // 1. Get count of people inside
-        const insideCount = await User.count({ where: { is_inside: true } });
+        // Sequelize update returns an array where the first element is the number of affected rows
+        const clearedCount = updateResult[0] || 0;
 
-        if (insideCount === 0) {
+        if (clearedCount === 0) {
             return res.json({ message: 'Hub is already empty', cleared: 0 });
         }
 
-        // 2. Perform mass update
-        await User.update({ is_inside: false }, { where: { is_inside: true } });
-
-        // 3. Log the event
+        // Log the event
         await AccessLog.create({
             method: 'system_clear',
             decision: 'Exit',
             manager_id: req.user.id,
             backend_decision: 'VALID',
-            scan_payload: `SYSTEM_RESET: ${insideCount} members checked out`,
+            scan_payload: `SYSTEM_RESET: ${clearedCount} members checked out`,
             location_id: req.body.location_id || null
         });
 
         res.json({
-            message: `Successfully checked out ${insideCount} members.`,
-            cleared: insideCount
+            message: `Successfully checked out ${clearedCount} members.`,
+            cleared: clearedCount
         });
     } catch (error) {
         res.status(500).json({ message: 'Error performing mass checkout', error: error.message });

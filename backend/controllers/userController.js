@@ -100,6 +100,9 @@ exports.updateSettings = async (req, res) => {
 // GET /api/v1/users — Admin: list all users
 exports.getAllUsers = async (req, res) => {
     try {
+        const limit = parseInt(req.query.limit, 10) || 1000;
+        const offset = parseInt(req.query.offset, 10) || 0;
+
         const users = await User.findAll({
             attributes: { exclude: ['password_hash'] },
             include: [{
@@ -109,6 +112,8 @@ exports.getAllUsers = async (req, res) => {
                 required: false,
             }],
             order: [['createdAt', 'DESC']],
+            limit,
+            offset
         });
         res.json(users);
     } catch (error) {

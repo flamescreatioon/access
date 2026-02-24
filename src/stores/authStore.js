@@ -72,7 +72,21 @@ export const useAuthStore = create((set, get) => ({
 
     updateUser: (userData) => {
         const currentUser = get().user;
-        const updatedUser = { ...currentUser, ...userData };
+        const updatedUser = { ...currentUser };
+        Object.keys(userData).forEach(key => {
+            if (
+                typeof userData[key] === 'object' &&
+                userData[key] !== null &&
+                !Array.isArray(userData[key]) &&
+                typeof currentUser[key] === 'object' &&
+                currentUser[key] !== null &&
+                !Array.isArray(currentUser[key])
+            ) {
+                updatedUser[key] = { ...currentUser[key], ...userData[key] };
+            } else {
+                updatedUser[key] = userData[key];
+            }
+        });
         localStorage.setItem('user', JSON.stringify(updatedUser));
         set({ user: updatedUser });
     },

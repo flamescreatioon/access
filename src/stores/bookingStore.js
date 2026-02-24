@@ -35,10 +35,12 @@ export const useBookingStore = create((set, get) => ({
     },
 
     fetchUpcoming: async () => {
+        set({ isLoading: true, error: null });
         try {
             const res = await api.get('/bookings?upcoming=true');
-            set({ upcomingBookings: res.data });
+            set({ upcomingBookings: res.data, isLoading: false });
         } catch (error) {
+            set({ error: 'Failed to load upcoming bookings', isLoading: false });
             console.error('Error fetching upcoming bookings:', error);
         }
     },

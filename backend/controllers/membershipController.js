@@ -54,8 +54,13 @@ exports.getUserMembership = async (req, res) => {
 
 exports.getAllMemberships = async (req, res) => {
     try {
+        const limit = parseInt(req.query.limit, 10) || 1000;
+        const offset = parseInt(req.query.offset, 10) || 0;
+
         const memberships = await Membership.findAll({
-            include: [User, AccessTier]
+            include: [User, AccessTier],
+            limit,
+            offset
         });
         res.json(memberships);
     } catch (error) {

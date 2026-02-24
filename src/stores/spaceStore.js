@@ -89,11 +89,12 @@ export const useSpaceStore = create((set, get) => ({
     },
 
     fetchAvailability: async (spaceId, date) => {
+        set({ loading: true, error: null });
         try {
             const res = await api.get(`/spaces/${spaceId}/availability?date=${date}`);
-            set({ availability: res.data });
+            set({ availability: res.data, loading: false });
         } catch (error) {
-            set({ error: error.response?.data?.message || 'Failed to load availability' });
+            set({ error: error.response?.data?.message || 'Failed to load availability', loading: false });
         }
     },
 
