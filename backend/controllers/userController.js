@@ -273,6 +273,19 @@ exports.deleteUser = async (req, res) => {
             return res.status(403).json({ message: 'Forbidden: Only Admins can delete users' });
         }
 
+        // Prevent self-deletion
+        if (user.id === req.user.id) {
+            return res.status(400).json({ message: 'Cannot delete your own admin account' });
+        }
+
+        // Prevent deleting the last admin
+        if (user.role === 'Admin') {
+            const adminCount = await User.count({ where: { role: 'Admin' } });
+            if (adminCount <= 1) {
+                return res.status(400).json({ message: 'Cannot delete the last remaining Admin account' });
+            }
+        }
+
         await user.destroy();
         res.json({ message: 'User permanently deleted' });
     } catch (error) {

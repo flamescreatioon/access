@@ -7,8 +7,7 @@ const INACTIVITY_TIMEOUT_REMEMBERED = 24 * 60 * 60 * 1000; // 24 hours
 
 export const useAuthStore = create((set, get) => ({
     user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
-    isAuthenticated: !!localStorage.getItem('token'),
+    isAuthenticated: !!localStorage.getItem('user'),
     loginError: null,
     isLoading: false,
 
@@ -16,10 +15,8 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: true, loginError: null });
         try {
             const response = await api.post('/auth/login', { email, password, rememberMe });
-            const { user, accessToken, refreshToken } = response.data;
+            const { user } = response.data;
 
-            localStorage.setItem('token', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('rememberMe', rememberMe.toString());
 
@@ -29,7 +26,7 @@ export const useAuthStore = create((set, get) => ({
                 localStorage.removeItem('rememberedEmail');
             }
 
-            set({ user, token: accessToken, isAuthenticated: true, loginError: null, isLoading: false });
+            set({ user, isAuthenticated: true, loginError: null, isLoading: false });
             get().startInactivityTimer();
             return true;
         } catch (error) {
@@ -45,13 +42,11 @@ export const useAuthStore = create((set, get) => ({
         set({ isLoading: true, loginError: null });
         try {
             const response = await api.post('/auth/register', { name, email, password, role });
-            const { user, accessToken, refreshToken } = response.data;
+            const { user } = response.data;
 
-            localStorage.setItem('token', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
             localStorage.setItem('user', JSON.stringify(user));
 
-            set({ user, token: accessToken, isAuthenticated: true, loginError: null, isLoading: false });
+            set({ user, isAuthenticated: true, loginError: null, isLoading: false });
             get().startInactivityTimer();
             return true;
         } catch (error) {
@@ -63,13 +58,16 @@ export const useAuthStore = create((set, get) => ({
         }
     },
 
-    logout: () => {
+    logout: async () => {
         if (inactivityTimer) clearTimeout(inactivityTimer);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         // We keep 'rememberMe' and 'rememberedEmail' for the login page
-        set({ user: null, token: null, isAuthenticated: false, loginError: null });
+        set({ user: null, isAuthenticated: false, loginError: null });
+        try {
+            await api.post('/auth/logout');
+        } catch (e) {
+            // ignore
+        }
     },
 
     updateUser: (userData) => {

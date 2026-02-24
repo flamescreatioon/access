@@ -205,7 +205,7 @@ exports.getBookingById = async (req, res) => {
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
         if (booking.user_id !== req.user.id && req.user.role !== 'Admin') {
-            return res.status(403).json({ message: 'Unauthorized' });
+            return res.status(404).json({ message: 'Booking not found' });
         }
 
         res.json(booking);
@@ -221,11 +221,15 @@ exports.modifyBooking = async (req, res) => {
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
         if (booking.user_id !== req.user.id && req.user.role !== 'Admin') {
-            return res.status(403).json({ message: 'Unauthorized' });
+            return res.status(404).json({ message: 'Booking not found' });
         }
 
         if (booking.status !== 'confirmed' && booking.status !== 'pending') {
             return res.status(400).json({ message: 'Only active bookings can be modified' });
+        }
+
+        if (new Date(booking.start_time) < new Date()) {
+            return res.status(400).json({ message: 'Cannot modify a booking that has already started or is in the past' });
         }
 
         const { start_time, end_time, title, notes } = req.body;
@@ -272,11 +276,15 @@ exports.cancelBooking = async (req, res) => {
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
         if (booking.user_id !== req.user.id && req.user.role !== 'Admin') {
-            return res.status(403).json({ message: 'Unauthorized' });
+            return res.status(404).json({ message: 'Booking not found' });
         }
 
         if (booking.status === 'cancelled') {
             return res.status(400).json({ message: 'Booking already cancelled' });
+        }
+
+        if (new Date(booking.start_time) < new Date()) {
+            return res.status(400).json({ message: 'Cannot cancel a booking that has already started or is in the past' });
         }
 
         // Check cancellation window (2 hours before start for non-admin)

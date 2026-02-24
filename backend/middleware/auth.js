@@ -5,8 +5,16 @@ const jwt = require('jsonwebtoken');
  * Verifies JWT token from Authorization header (Bearer <token>)
  */
 exports.authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = null;
+
+    if (req.cookies && req.cookies.accessToken) {
+        token = req.cookies.accessToken;
+    }
+
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        token = authHeader && authHeader.split(' ')[1];
+    }
 
     if (!token) {
         return res.status(401).json({ message: 'Authentication required' });

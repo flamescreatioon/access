@@ -27,9 +27,28 @@ const generateTokens = (user, rememberMe = false) => {
     return { accessToken, refreshToken };
 };
 
+const setTokenCookies = (res, tokens, rememberMe = false) => {
+    const refreshExpiryMs = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    const accessExpiryMs = 15 * 60 * 1000; // 15 mins
+
+    res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: accessExpiryMs
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: refreshExpiryMs
+    });
+};
+
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role, rememberMe } = req.body;
+        const { name, email, password, rememberMe } = req.body;
 
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
@@ -37,7 +56,7 @@ exports.register = async (req, res) => {
         }
 
         const password_hash = await bcrypt.hash(password, 10);
-        const userRole = role || 'Member';
+        const userRole = 'Member';
 
         const user = await User.create({
             name,
@@ -70,6 +89,9 @@ exports.register = async (req, res) => {
             resource_id: user.id,
             req
         });
+
+        // Set HttpOnly Cookies
+        setTokenCookies(res, tokens, rememberMe);
 
         res.status(201).json({
             user: {
@@ -133,6 +155,9 @@ exports.login = async (req, res) => {
             req
         });
 
+        // Set HttpOnly Cookies
+        setTokenCookies(res, tokens, rememberMe);
+
         res.json({
             user: {
                 id: user.id,
@@ -156,7 +181,7 @@ exports.login = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     if (!refreshToken) return res.status(401).json({ message: 'Refresh token required' });
 
     try {
@@ -186,6 +211,9 @@ exports.refreshToken = async (req, res) => {
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         });
 
+        // Set HttpOnly Cookies
+        setTokenCookies(res, tokens, false);
+
         res.json(tokens);
     } catch (error) {
         res.status(403).json({ message: 'Invalid refresh token' });
@@ -193,11 +221,14 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.logout = async (req, res) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
     try {
         if (refreshToken) {
             await RefreshToken.destroy({ where: { token: refreshToken } });
         }
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
+
         if (req.user) {
             await recordAuditLog({ user_id: req.user.id, action: 'LOGOUT', req });
         }

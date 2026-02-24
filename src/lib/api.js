@@ -7,6 +7,7 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true, // Send HTTP-Only cookies with every request
 });
 
 // Configure auto-retries
@@ -19,28 +20,16 @@ axiosRetry(api, {
     }
 });
 
-// Request interceptor to add JWT token
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
 // Flag to prevent multiple refresh calls
 let isRefreshing = false;
 let failedQueue = [];
 
-const processQueue = (error, token = null) => {
+const processQueue = (error) => {
     failedQueue.forEach((prom) => {
         if (error) {
             prom.reject(error);
         } else {
-            prom.resolve(token);
+            prom.resolve();
         }
     });
     failedQueue = [];
@@ -62,8 +51,7 @@ api.interceptors.response.use(
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 })
-                    .then((token) => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                    .then(() => {
                         return api(originalRequest);
                     })
                     .catch((err) => Promise.reject(err));
@@ -72,37 +60,20 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const refreshToken = localStorage.getItem('refreshToken');
-            if (refreshToken) {
-                try {
-                    // Use plain axios for refresh to avoid interceptor loop
-                    const response = await axios.post('/api/v1/auth/refresh', { refreshToken });
-                    const { accessToken, refreshToken: newRefreshToken } = response.data;
+            try {
+                // Use plain axios with credentials for refresh to avoid interceptor loop
+                await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
 
-                    localStorage.setItem('token', accessToken);
-                    localStorage.setItem('refreshToken', newRefreshToken);
-
-                    api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-                    processQueue(null, accessToken);
-                    return api(originalRequest);
-                } catch (refreshError) {
-                    processQueue(refreshError, null);
-                    // Clear all auth data on failed refresh
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('refreshToken');
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
-                    return Promise.reject(refreshError);
-                } finally {
-                    isRefreshing = false;
-                }
-            } else {
-                // No refresh token available, just clean up and go to login
-                localStorage.removeItem('token');
+                processQueue(null);
+                return api(originalRequest);
+            } catch (refreshError) {
+                processQueue(refreshError);
+                // Clear all auth data on failed refresh
                 localStorage.removeItem('user');
                 window.location.href = '/login';
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
             }
         }
 

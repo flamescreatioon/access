@@ -33,7 +33,7 @@ exports.getUserMembership = async (req, res) => {
         const { userId } = req.params;
 
         // Security check: only allow viewing own or if Admin
-        if (req.user.role !== 'Admin' && req.user.id != userId) {
+        if (req.user.role !== 'Admin' && req.user.id !== parseInt(userId, 10)) {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
