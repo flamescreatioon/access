@@ -5,7 +5,8 @@ import {
     LayoutDashboard, CreditCard, CalendarDays, Activity,
     Crown, Users, Shield, MonitorSmartphone, BookOpen,
     UserCheck, UserPlus, Settings, LogOut, Zap,
-    ScanLine, Smartphone, History, Building, Wrench, Bell, Sliders
+    UserCheck, UserPlus, Settings, LogOut, Zap,
+    ScanLine, Smartphone, History, Building, Wrench, Bell, Sliders, Coffee
 } from 'lucide-react';
 
 const memberNav = [
@@ -14,6 +15,7 @@ const memberNav = [
     { to: '/spaces', label: 'Spaces', icon: Building },
     { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
+    { to: '/cafe', label: 'Cafe', icon: Coffee },
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/activity', label: 'Activity', icon: Activity },
     { to: '/membership', label: 'Membership', icon: Crown },
@@ -30,6 +32,7 @@ const hubManagerNav = [
     { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
     { to: '/booking-rules', label: 'Booking Rules', icon: Sliders },
+    { to: '/admin/cafe', label: 'Cafe Admin', icon: Coffee },
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
 ];
@@ -45,6 +48,7 @@ const adminNav = [
     { to: '/equipment', label: 'Equipment', icon: Wrench },
     { to: '/bookings', label: 'Bookings', icon: CalendarDays },
     { to: '/booking-rules', label: 'Booking Rules', icon: Sliders },
+    { to: '/admin/cafe', label: 'Cafe Admin', icon: Coffee },
     { to: '/notifications', label: 'Notifications', icon: Bell },
     { to: '/visitors', label: 'Visitors', icon: UserCheck },
 ];

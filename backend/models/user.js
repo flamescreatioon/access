@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.Device, { foreignKey: 'user_id', onDelete: 'CASCADE' });
       User.hasMany(models.Notification, { foreignKey: 'user_id', onDelete: 'CASCADE' });
       User.hasMany(models.PushSubscription, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+      User.hasMany(models.Order, { foreignKey: 'user_id', as: 'orders' });
     }
   }
   User.init({

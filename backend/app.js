@@ -80,7 +80,8 @@ app.use('/api/v1/scan', require('./routes/scan'));
 app.use('/api/v1/devices', require('./routes/devices'));
 app.use('/api/v1/analytics', require('./routes/analytics'));
 app.use('/api/v1/booking-config', require('./routes/bookingConfig'));
-
+app.use('/api/v1/cafe', require('./routes/cafeRoutes'));
+app.use('/api/v1/orders', require('./routes/orderRoutes'));
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('GLOBAL ERROR:', err);

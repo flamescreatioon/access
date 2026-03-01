@@ -24,6 +24,8 @@ import UserManagement from './features/admin/UserManagement';
 import BookingConfigPage from './features/admin/BookingConfigPage';
 import ScannerPage from './features/scanner/ScannerPage';
 import DeviceActivation from './features/scanner/DeviceActivation';
+import CafeLounge from './features/cafe/CafeLounge';
+import CafeAdminDashboard from './features/admin/cafe/CafeAdminDashboard';
 import ScanHistory from './features/scanner/ScanHistory';
 import OnboardingSetup from './features/onboarding/OnboardingSetup';
 import OfflinePage from './pages/OfflinePage';
@@ -71,6 +73,7 @@ function AppRoutes() {
         <Route path="/access-card" element={<AccessCardPage />} />
         <Route path="/membership" element={<MemberDashboard />} />
         <Route path="/bookings" element={<BookingsPage />} />
+        <Route path="/cafe" element={<CafeLounge />} />
         <Route path="/spaces" element={<SpacesPage />} />
         <Route path="/spaces/:id" element={<SpaceDetail />} />
         <Route path="/equipment" element={<EquipmentPage />} />
@@ -109,6 +112,11 @@ function AppRoutes() {
         <Route path="/booking-rules" element={
           <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
             <BookingConfigPage />
+          </AuthGuard>
+        } />
+        <Route path="/admin/cafe" element={
+          <AuthGuard allowedRoles={[ROLES.ADMIN, ROLES.HUB_MANAGER]}>
+            <CafeAdminDashboard />
           </AuthGuard>
         } />
 
