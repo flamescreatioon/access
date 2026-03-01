@@ -5,7 +5,6 @@ import {
     LayoutDashboard, CreditCard, CalendarDays, Activity,
     Crown, Users, Shield, MonitorSmartphone, BookOpen,
     UserCheck, UserPlus, Settings, LogOut, Zap,
-    UserCheck, UserPlus, Settings, LogOut, Zap,
     ScanLine, Smartphone, History, Building, Wrench, Bell, Sliders, Coffee
 } from 'lucide-react';
 
